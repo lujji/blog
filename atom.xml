@@ -5,7 +5,7 @@
   <link href="/blog/atom.xml" rel="self"/>
   
   <link href="http://lujji.github.io/blog/"/>
-  <updated>2016-09-11T02:20:00.827Z</updated>
+  <updated>2016-09-11T05:02:08.851Z</updated>
   <id>http://lujji.github.io/blog/</id>
   
   <author>
@@ -16,18 +16,35 @@
   <generator uri="http://hexo.io/">Hexo</generator>
   
   <entry>
+    <title>test</title>
+    <link href="http://lujji.github.io/blog/test/"/>
+    <id>http://lujji.github.io/blog/test/</id>
+    <published>2016-09-11T05:02:08.000Z</published>
+    <updated>2016-09-11T05:02:08.851Z</updated>
+    
+    <summary type="html">
+    
+    </summary>
+    
+    
+  </entry>
+  
+  <entry>
     <title>Adding Trace support to ST-LINK clones</title>
     <link href="http://lujji.github.io/blog/stlink-clone-trace/"/>
     <id>http://lujji.github.io/blog/stlink-clone-trace/</id>
     <published>2016-09-10T20:54:00.000Z</published>
-    <updated>2016-09-11T02:20:00.827Z</updated>
+    <updated>2016-09-11T04:27:32.207Z</updated>
     
     <content type="html"><![CDATA[<p>When it comes to programming ST microcontrollers, I prefer to use Discovery boards (mainly because you can turn them into J-Link). However, I got tired of carrying around the whole dev-board just for the programmer, so I ordered a cheap st-link clone due to it’s small form-factor.<br><a id="more"></a></p>
-<h2 id="The-clone"><a href="#The-clone" class="headerlink" title="The clone"></a>The clone</h2><p><img src="/images/stlink-clone-trace/st-link.jpg" alt="ST-Link clone"><br>For less than 3$ you get a nice dongle in aluminium case and some wires. After taking a closer look I noticed that there is no <strong>SWO</strong> pin on the pinout. Perhaps SWIM pin would dual-function as SWO when working with STM32? Unfortunately this wasn’t the case. So what, does it mean I have to use another USB cable just for UART? No way, I’m not going back to the stone age, I want my Trace!</p>
+<h2 id="The-clone"><a href="#The-clone" class="headerlink" title="The clone"></a>The clone</h2><img src="/blog/stlink-clone-trace/st-link.jpg" alt="ST-Link clone" title="ST-Link clone">
+<p>For less than 3$ you get a nice dongle in aluminium case and some wires. After taking a closer look I noticed that there is no <strong>SWO</strong> pin on the pinout. Perhaps SWIM pin would dual-function as SWO when working with STM32? Unfortunately this wasn’t the case. So what, does it mean I have to use another USB cable just for UART? No way, I’m not going back to the stone age, I want my Trace!</p>
 <h2 id="Research"><a href="#Research" class="headerlink" title="Research"></a>Research</h2><p>Trace is a very neat feature. One of the common uses is redirecting <code>stdout</code> stream to stimulus port 0 in order to printf debugging information. All recent versions of ST-Link v2 support this feature, so the first thing I did was check if the dongle is running the original ST-Link firmware. I launched ST-LINK Utility and updated the firmware with no issues whatsoever. So now we know that the dongle is running the latest official firmware and supports trace functionality.</p>
-<p><img src="/images/stlink-clone-trace/schematic.png" alt="ST-Link schematic for STM32Discovery"><br>I couldn’t find schematics for a stand-alone programmer so I assumed it would be identical to the one present on Discovery board. PA10 is used for SWO so the next step would be pretty straight-forward.</p>
-<h2 id="Modding"><a href="#Modding" class="headerlink" title="Modding"></a>Modding</h2><p><img src="/images/stlink-clone-trace/st-link-mod.jpg" alt="St-link mod"><br>I’ve cut the trace from 5V pin right after the via and soldered some bodge-wire to PA10 (pin 31). I also added a 22&#937; resistor in case something goes horribly wrong. Initially I wanted to use SWIM pin since I don’t care about STM8 and it would only require desoldering one resistor without cutting any traces, but the 5V pin was easier to reach.</p>
-<p>Time for some testing.<br><img src="/images/stlink-clone-trace/trace-screenshot.png" alt=""></p>
+<img src="/blog/stlink-clone-trace/schematic.png" alt="ST-Link schematic" title="ST-Link schematic">
+<p>I couldn’t find schematics for a stand-alone programmer so I assumed it would be identical to the one present on Discovery board. PA10 is used for SWO so the next step would be pretty straight-forward.</p>
+<h2 id="Modding"><a href="#Modding" class="headerlink" title="Modding"></a>Modding</h2><img src="/blog/stlink-clone-trace/st-link-mod.jpg" alt="5V pin converted into SWO" title="5V pin converted into SWO">
+<p>I’ve cut the trace from 5V pin right after the via and soldered some bodge-wire to PA10 (pin 31). I also added a 22&#937; resistor in case something goes horribly wrong. Initially I wanted to use SWIM pin since I don’t care about STM8 and it would only require desoldering one resistor without cutting any traces, but the 5V pin was easier to reach.</p>
+<p>Time for some testing.<br><img src="/blog/stlink-clone-trace/trace-screenshot.png" alt="" ""="" title=""></p>
 <p>SWO Trace works perfectly fine which makes the dongle much more useful.</p>
 ]]></content>
     
