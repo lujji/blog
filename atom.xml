@@ -5,7 +5,7 @@
   <link href="/blog/atom.xml" rel="self"/>
   
   <link href="http://lujji.github.io/blog/"/>
-  <updated>2016-09-11T05:02:08.851Z</updated>
+  <updated>2016-09-11T04:27:32.207Z</updated>
   <id>http://lujji.github.io/blog/</id>
   
   <author>
@@ -14,20 +14,6 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
-  
-  <entry>
-    <title>test</title>
-    <link href="http://lujji.github.io/blog/test/"/>
-    <id>http://lujji.github.io/blog/test/</id>
-    <published>2016-09-11T05:02:08.000Z</published>
-    <updated>2016-09-11T05:02:08.851Z</updated>
-    
-    <summary type="html">
-    
-    </summary>
-    
-    
-  </entry>
   
   <entry>
     <title>Adding Trace support to ST-LINK clones</title>
