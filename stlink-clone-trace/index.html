@@ -5,20 +5,20 @@
   
   <title>Adding Trace support to ST-LINK clones | lujji</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="When it comes to programming ST microcontrollers, I prefer to use Discovery boards (mainly because you can convert them into J-Link). However, I got tired of carrying around the whole dev-board just f">
+  <meta name="description" content="When it comes to programming ST microcontrollers, I prefer to use Discovery boards (mainly because you can turn them into J-Link). However, I got tired of carrying around the whole dev-board just for">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Adding Trace support to ST-LINK clones">
 <meta property="og:url" content="http://lujji.github.io/blog/stlink-clone-trace/index.html">
 <meta property="og:site_name" content="lujji">
-<meta property="og:description" content="When it comes to programming ST microcontrollers, I prefer to use Discovery boards (mainly because you can convert them into J-Link). However, I got tired of carrying around the whole dev-board just f">
+<meta property="og:description" content="When it comes to programming ST microcontrollers, I prefer to use Discovery boards (mainly because you can turn them into J-Link). However, I got tired of carrying around the whole dev-board just for">
 <meta property="og:image" content="http://lujji.github.io/blog/blog/stlink-clone-trace/st-link.jpg">
 <meta property="og:image" content="http://lujji.github.io/blog/blog/stlink-clone-trace/schematic.png">
 <meta property="og:image" content="http://lujji.github.io/blog/blog/stlink-clone-trace/st-link-mod.jpg">
 <meta property="og:image" content="http://lujji.github.io/blog/blog/stlink-clone-trace/trace-screenshot.png">
-<meta property="og:updated_time" content="2016-09-12T21:34:32.051Z">
+<meta property="og:updated_time" content="2016-09-12T21:50:45.151Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Adding Trace support to ST-LINK clones">
-<meta name="twitter:description" content="When it comes to programming ST microcontrollers, I prefer to use Discovery boards (mainly because you can convert them into J-Link). However, I got tired of carrying around the whole dev-board just f">
+<meta name="twitter:description" content="When it comes to programming ST microcontrollers, I prefer to use Discovery boards (mainly because you can turn them into J-Link). However, I got tired of carrying around the whole dev-board just for">
 <meta name="twitter:image" content="http://lujji.github.io/blog/blog/stlink-clone-trace/st-link.jpg">
   
     <link rel="alternate" href="atom.xml" title="lujji" type="application/atom+xml">
@@ -94,7 +94,7 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <p>When it comes to programming ST microcontrollers, I prefer to use Discovery boards (mainly because you can <a href="https://www.segger.com/jlink-st-link.html" target="_blank" rel="external">convert them into J-Link</a>). However, I got tired of carrying around the whole dev-board just for the programmer, so I ordered a cheap st-link clone due to it’s small form-factor.<br><a id="more"></a></p>
+        <p>When it comes to programming ST microcontrollers, I prefer to use Discovery boards (mainly because you can <a href="https://www.segger.com/jlink-st-link.html" target="_blank" rel="external">turn them into J-Link</a>). However, I got tired of carrying around the whole dev-board just for the programmer, so I ordered a cheap st-link clone due to it’s small form-factor.<br><a id="more"></a></p>
 <h2 id="The-clone"><a href="#The-clone" class="headerlink" title="The clone"></a>The clone</h2><img src="/blog/stlink-clone-trace/st-link.jpg" alt="ST-Link clone" title="ST-Link clone">
 <p>For less than 3$ you get a nice dongle in aluminium case and some wires. After taking a closer look I noticed that there is no <strong>SWO</strong> pin on the pinout. Perhaps SWIM pin would dual-function as SWO when working with STM32? Unfortunately this wasn’t the case. So what, does it mean I have to use another USB cable just for UART? No way, I’m not going back to the stone age, I want my Trace!</p>
 <h2 id="Research"><a href="#Research" class="headerlink" title="Research"></a>Research</h2><p>Trace is a very neat feature. One of the common uses is redirecting <code>stdout</code> stream to stimulus port 0 in order to printf debugging information. All recent versions of ST-Link v2 support this feature, so the first thing I did was check if the dongle is running the original ST-Link firmware. I launched ST-LINK Utility and updated the firmware with no issues whatsoever. So now we know that the dongle is running the latest official firmware and supports trace functionality.</p>
@@ -108,7 +108,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://lujji.github.io/blog/stlink-clone-trace/" data-id="cit0ki7h40000njs6czlv74fa" class="article-share-link">Share</a>
+      <a data-url="http://lujji.github.io/blog/stlink-clone-trace/" data-id="cit0l33860000mes6ck6dji4t" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/blog/tags/st-link/">st-link</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/blog/tags/stm32/">stm32</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/blog/tags/swo/">swo</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/blog/tags/trace/">trace</a></li></ul>
