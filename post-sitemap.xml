@@ -7,6 +7,14 @@
     </url>
 
     <url>
+        <loc>http://lujji.github.io/blog/reverse-engineering-stlink-firmware/</loc>
+        <lastmod>2016-10-13T01:14:16.064Z</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.6</priority>
+
+    </url>
+
+    <url>
         <loc>http://lujji.github.io/blog/stlink-clone-trace/</loc>
         <lastmod>2016-09-12T21:50:45.151Z</lastmod>
         <changefreq>weekly</changefreq>
