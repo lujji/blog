@@ -5,7 +5,7 @@
   <link href="/blog/atom.xml" rel="self"/>
   
   <link href="http://lujji.github.io/blog/"/>
-  <updated>2016-10-16T03:26:07.776Z</updated>
+  <updated>2016-10-17T19:51:06.976Z</updated>
   <id>http://lujji.github.io/blog/</id>
   
   <author>
@@ -16,11 +16,62 @@
   <generator uri="http://hexo.io/">Hexo</generator>
   
   <entry>
+    <title>Reverse-engineering ST-Link firmware - Part 2</title>
+    <link href="http://lujji.github.io/blog/reverse-engineering-stlink-firmware-part2/"/>
+    <id>http://lujji.github.io/blog/reverse-engineering-stlink-firmware-part2/</id>
+    <published>2016-10-17T00:00:00.000Z</published>
+    <updated>2016-10-17T19:51:06.976Z</updated>
+    
+    <content type="html"><![CDATA[<p>This is the second part of ST-Link reverse-engineering, where I cover dumping the firmware, extracting and reverse-engineering the bootloader, and finally, patching the bootloader in order to disable Level 1 protection.</p>
+<a id="more"></a>
+<hr>
+<h2 id="Dumping-the-bootloader"><a href="#Dumping-the-bootloader" class="headerlink" title="Dumping the bootloader"></a>Dumping the bootloader</h2><p>Dumping the firmware was the easiest part. Once the bootloader passes control to our code, we initialize clocks and UART. After that we send two marker bytes to indicate beginning of the firmware and then simply read all the flash memory starting from the address 0x08000000 and send it over UART one byte at a time. Since I was too lazy to implement any flow control, I opted for modest 9600 baud and added a small delay after each byte transfer just to make sure that I don’t hit a buffer overrun on my UART-USB converter. TX pin on UART2 is PA2 (there are solder-bridges for RX and TX on Discovery boards).</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</div><div class="line">    clock_setup();</div><div class="line">    usart_setup();</div><div class="line">    gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_50_MHZ,</div><div class="line">            GPIO_CNF_OUTPUT_PUSHPULL, LED_PIN);</div><div class="line">    gpio_clear(GPIOA, LED_PIN);</div><div class="line"></div><div class="line">    usart_send_blocking(USART2, <span class="number">0xAB</span>);</div><div class="line">    usart_send_blocking(USART2, <span class="number">0xCD</span>);</div><div class="line"></div><div class="line">    <span class="keyword">for</span> (<span class="keyword">uint32_t</span> addr = <span class="number">0x08000000</span>; addr &lt;= <span class="number">0x08010000</span>; addr++) &#123;</div><div class="line">        usart_send_blocking(USART2, *((<span class="keyword">uint16_t</span> *) addr));</div><div class="line">        delay(<span class="number">1</span>);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="keyword">while</span> (<span class="number">1</span>) &#123;</div><div class="line">        <span class="comment">/* loop forever */</span></div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>After I accidentally triggered mass-erase on my Nucleo board, I had only one board with ST-Link v2-1 left. I didn’t want to risk, so I tried dumping a Chinese ST-Link v2 clone first. Once the update process finished, the programmer immediately started to spit out it’s own flash contents over the serial interface.</p>
+<img src="/blog/reverse-engineering-stlink-firmware-part2/stlink_dump.png" alt="note: screenshot shows dumping of ST-Link v2-1" title="note: screenshot shows dumping of ST-Link v2-1">
+<p>As I mentioned before, visualizing raw binary data is a very useful trick during analysis. Let’s see what the dump looks like.</p>
+<img src="/blog/reverse-engineering-stlink-firmware-part2/dump_visualization.png" alt="Firmware dump visualization" title="Firmware dump visualization">
+<p>We clearly see the separation between the bootloader and user code. Most importantly, there is a small chunk of data near the end of the bootloader section (later I discovered these bytes are written by the bootloader at the end of the update process to indicate a valid firmware). We can also see that first two pages of memory in the user code section were erased and now contain our dumper code.</p>
+<p>As I mentioned in Part 1, my attempt to access the microcontroller through a debugger resulted in flash mass-erase. According to the reference manual, it implies that Level 1 protection is activated: <em>“Level 1 protection allows to recover a programmed part by erasing the entire Flash content. This is done by re-programming the RDP option byte from Level 1 to Level 0.”</em> The <a href="http://www.st.com/content/ccc/resource/technical/document/programming_manual/10/98/e8/d4/2b/51/4b/f5/CD00283419.pdf/files/CD00283419.pdf/jcr:content/translations/en.CD00283419.pdf" target="_blank" rel="external">programming manual</a> tells us where the option bytes are located.</p>
+<img src="/blog/reverse-engineering-stlink-firmware-part2/option_bytes.png" alt="" ""="" title="">
+<p>Before we move on to reverse-engineering the binary, let’s extract the bootloader section first, excluding the version bytes near the end:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ cat stlink_v2_dump.bin | head -c 15360 &gt; ST-Link_bootloader.bin</div></pre></td></tr></table></figure></p>
+<p>At this point, flashing bootloader onto an empty microcontroller will make the update utility think a blank ST-Link is connected. It will let you choose which firmware to flash, however the results will not be any different from what we achieved before by tricking the updater into flashing a different firmware.</p>
+<h2 id="Reverse-engineering"><a href="#Reverse-engineering" class="headerlink" title="Reverse-engineering"></a>Reverse-engineering</h2><p>There are many disassemblers available for ARM out there. One of them even works. Unfortunately, IDA demo version does not support binary files. I tried using radare2, but after a while decided that I don’t have a spare lifetime to learn how to use all of it’s hot-keys and commands.</p>
+<p>Eventually, I came across Hopper, which is a cross-platform disassembler. Demo version is limited to 30min sessions and does not allow saving projects or exporting files. That seemed good enough for me, so I gave it a try.</p>
+<p>First things first, I searched for <code>0x1FFFF800</code> and sure enough - this constant was present.</p>
+<img src="/blog/reverse-engineering-stlink-firmware-part2/hopper.png" alt="Hopper" title="Hopper">
+<p>It is referenced only once (hitting <code>X</code> lists all the references). If we follow the reference, we end up in a subroutine that presumably sets up the option bytes. Hopper can also generate pseudo-code. It’s not that great with loops and conditionals, but comes in handy when analyzing arithmetic operations.<br><img src="/blog/reverse-engineering-stlink-firmware-part2/set_option_bytes.png" alt="Pseudo-code" title="Pseudo-code"></p>
+<p>This function is called only once, and if we follow the reference we end up in a section with quite a few function calls. Control flow graph shows that we identified main program loop at 0x2198. I tried visiting all the functions and guessing what the do.</p>
+<img src="/blog/reverse-engineering-stlink-firmware-part2/main_loop.png" alt="Main loop" title="Main loop">
+<h2 id="Disabling-protection"><a href="#Disabling-protection" class="headerlink" title="Disabling protection"></a>Disabling protection</h2><p>We know that the function call to <code>option_bytes_config</code> is located at 0x21B2 in the binary dump. Let’s try to ‘nop’ it and see what we get. NOP is a pseudo-instruction on ARM cores, so we have to use something like ‘mov r8,r8’ to skip a cycle.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">$ <span class="built_in">echo</span> <span class="string">"mov r8, r8"</span> | arm-none-eabi-as -mthumb -march=armv7 &amp;&amp; arm-none-eabi-objdump <span class="_">-d</span> a.out</div><div class="line">...</div><div class="line">   0:   46c0            nop                     ; (mov r8, r8)</div></pre></td></tr></table></figure>
+<p>Branch instruction occupies 4 bytes, which means we have to patch <code>C0 46 C0 46</code> to ‘nop’ the function call.</p>
+<p>Next we flash the patched bootloader and use the updater utility to upload ST-Link firmware. Now let’s try dumping the firmware with openocd to see if protection is still enabled.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">$ openocd <span class="_">-f</span> interface/stlink-v2.cfg -c <span class="string">'transport select hla_swd'</span> \</div><div class="line">          <span class="_">-f</span> target/stm32f1x.cfg -c <span class="string">'adapter_khz 4000'</span> -c init -c <span class="string">'reset halt'</span> \</div><div class="line">          -c <span class="string">'dump_image dump.bin 0x08000000 0x10000'</span> -c shutdown</div></pre></td></tr></table></figure>
+<p>And this is what we get:<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">...</div><div class="line">stm32f1x.cpu: target state: halted</div><div class="line">target halted due to debug-request, current mode: Thread</div><div class="line">xPSR: 0x01000000 pc: 0x08002764 msp: 0x20000800</div><div class="line">dumped 65536 bytes in 0.427944s (149.552 KiB/s)</div></pre></td></tr></table></figure></p>
+<p>Success!</p>
+<h2 id="Conclusion"><a href="#Conclusion" class="headerlink" title="Conclusion"></a>Conclusion</h2><p>After I dumped the firmware from the ST-Link v2 clone I successfully repeated the same procedure for an ST-Link v2-1. I used the same approach for removing protection, although the main program loop was a bit trickier to find. Being able to use a debugger makes it significantly easier to study the functionality of the bootloader and main firmware.</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;This is the second part of ST-Link reverse-engineering, where I cover dumping the firmware, extracting and reverse-engineering the bootloader, and finally, patching the bootloader in order to disable Level 1 protection.&lt;/p&gt;
+    
+    </summary>
+    
+    
+      <category term="reverse-engineering" scheme="http://lujji.github.io/blog/tags/reverse-engineering/"/>
+    
+      <category term="st-link" scheme="http://lujji.github.io/blog/tags/st-link/"/>
+    
+  </entry>
+  
+  <entry>
     <title>Reverse-engineering ST-Link firmware</title>
     <link href="http://lujji.github.io/blog/reverse-engineering-stlink-firmware/"/>
     <id>http://lujji.github.io/blog/reverse-engineering-stlink-firmware/</id>
     <published>2016-10-13T01:11:48.000Z</published>
-    <updated>2016-10-16T03:26:07.776Z</updated>
+    <updated>2016-10-16T03:27:47.236Z</updated>
     
     <content type="html"><![CDATA[<p>This is the first part of ST-Link reverse-engineering, where I cover analyzing and decompiling the updater utility, decrypting and encrypting firmware binaries and running custom code on ST-Link v2/2-1 programmer.</p>
 <a id="more"></a>
@@ -61,7 +112,7 @@
 <p>The code is rather self-explanatory.</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</div><div class="line">    rcc_clock_setup_in_hse_8mhz_out_72mhz();</div><div class="line">    rcc_periph_clock_enable(RCC_GPIOA);</div><div class="line">    gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_50_MHZ,</div><div class="line">        GPIO_CNF_OUTPUT_PUSHPULL, GPIO5);</div><div class="line"></div><div class="line">    <span class="keyword">while</span> (<span class="number">1</span>) &#123;</div><div class="line">        gpio_toggle(GPIOA, GPIO5);</div><div class="line">        delay_ms(<span class="number">250</span>);</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
 <p>After compiling the binary I used my utility to encrypt the binary.</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ java -jar st_decrypt.jar -k &quot;best performance&quot; -i main.bin -o f2_3.bin --encrypt</div></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ java -jar st_decrypt.jar -k <span class="string">"best performance"</span> -i main.bin -o f2_3.bin --encrypt</div></pre></td></tr></table></figure>
 <p>Next, we replace the original <code>f2_3.bin</code> with our own, compress the jar archive and update the firmware on the st-link. For this test I used my F4 Discovery board. The update process finishes with an error saying that it can’t exit DFU mode. Let’s take a look at the board now.</p>
 <img src="/blog/reverse-engineering-stlink-firmware/blinking_led.jpg" alt="Current limiting? Never heard of." title="Current limiting? Never heard of.">
 <p>It was the first time I was excited about a blinking LED on a development board ;) Once you unplug the power, st-link would start in DFU mode again (as it normally does). Each st-link related command like writing to flash or reading target voltage would first ask the st-link to exit DFU mode and start executing main firmware code.</p>
