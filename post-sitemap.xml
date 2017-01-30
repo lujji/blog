@@ -7,6 +7,14 @@
     </url>
 
     <url>
+        <loc>http://lujji.github.io/blog/esp-httpd/</loc>
+        <lastmod>2017-01-30T20:11:09.043Z</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.6</priority>
+
+    </url>
+
+    <url>
         <loc>http://lujji.github.io/blog/reverse-engineering-stlink-firmware-part2/</loc>
         <lastmod>2016-10-17T23:00:28.436Z</lastmod>
         <changefreq>weekly</changefreq>

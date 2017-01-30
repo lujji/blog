@@ -1,28 +1,101 @@
-<?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom">
-  <title>lujji</title>
-  <subtitle>embedded stuff</subtitle>
-  <link href="/blog/atom.xml" rel="self"/>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
   
-  <link href="http://lujji.github.io/blog/"/>
-  <updated>2017-01-30T20:11:09.043Z</updated>
-  <id>http://lujji.github.io/blog/</id>
+  <title>HTTP Server with WebSockets on ESP8266 | lujji</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="This article will cover implementing a basic HTTP server on top of LwIP for ESP8266 and dive into the implementation of WebSockets.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="HTTP Server with WebSockets on ESP8266">
+<meta property="og:url" content="http://lujji.github.io/blog/esp-httpd/index.html">
+<meta property="og:site_name" content="lujji">
+<meta property="og:description" content="This article will cover implementing a basic HTTP server on top of LwIP for ESP8266 and dive into the implementation of WebSockets.">
+<meta property="og:image" content="http://lujji.github.io/blog/blog/esp-httpd/hardware.jpg">
+<meta property="og:image" content="http://lujji.github.io/blog/blog/esp-httpd/http_test.png">
+<meta property="og:image" content="http://lujji.github.io/blog/blog/esp-httpd/http_test2.png">
+<meta property="og:image" content="http://lujji.github.io/blog/blog/esp-httpd/websocket_demo.png">
+<meta property="og:updated_time" content="2017-01-30T20:11:09.043Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="HTTP Server with WebSockets on ESP8266">
+<meta name="twitter:description" content="This article will cover implementing a basic HTTP server on top of LwIP for ESP8266 and dive into the implementation of WebSockets.">
+<meta name="twitter:image" content="http://lujji.github.io/blog/blog/esp-httpd/hardware.jpg">
   
-  <author>
-    <name>lujji</name>
-    <email>lujji at protonmail com</email>
-  </author>
+    <link rel="alternate" href="atom.xml" title="lujji" type="application/atom+xml">
   
-  <generator uri="http://hexo.io/">Hexo</generator>
   
-  <entry>
-    <title>HTTP Server with WebSockets on ESP8266</title>
-    <link href="http://lujji.github.io/blog/esp-httpd/"/>
-    <id>http://lujji.github.io/blog/esp-httpd/</id>
-    <published>2017-01-30T20:11:00.000Z</published>
-    <updated>2017-01-30T20:11:09.043Z</updated>
+    <link rel="icon" href="/blog/css/images/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  <link rel="stylesheet" href="/blog/css/style.css">
+  
+
+</head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/blog/" id="logo">lujji</a>
+      </h1>
+      
+        <h2 id="subtitle-wrap">
+          <a href="/blog/" id="subtitle">embedded stuff</a>
+        </h2>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/blog/">Home</a>
+        
+          <a class="main-nav-link" href="/blog/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+      <a id="nav-github-link" class="nav-icon" href="https://github.com/lujji" title="GitHub"></a>
+        
+          <a id="nav-rss-link" class="nav-icon" href="atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//duckduckgo.com" method="get" accept-charset="UTF-8" onsubmit="var qstr = document.getElementById('searchBox'); qstr.value += ' site:http://lujji.github.io/blog'" class="search-form"><input id="searchBox" type="search" name="q" results="0" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-esp-httpd" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/blog/esp-httpd/" class="article-date">
+  <time datetime="2017-01-30T20:11:00.000Z" itemprop="datePublished">2017-01-30</time>
+</a>
     
-    <content type="html"><![CDATA[<p>This article will cover implementing a basic HTTP server on top of LwIP for ESP8266 and dive into the implementation of WebSockets.</p>
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      HTTP Server with WebSockets on ESP8266
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>This article will cover implementing a basic HTTP server on top of LwIP for ESP8266 and dive into the implementation of WebSockets.</p>
 <a id="more"></a>
 <h2 id="Preface"><a href="#Preface" class="headerlink" title="Preface"></a>Preface</h2><p>ESP8266 is an extremely popular device. Chances are at some point you even bought a few modules for some “future project”. That’s exactly what I did, and for a long time I didn’t find any application for this device.</p>
 <h2 id="Contents"><a href="#Contents" class="headerlink" title="Contents:"></a>Contents:</h2><ul>
@@ -79,174 +152,129 @@
 <h2 id="Demo"><a href="#Demo" class="headerlink" title="Demo"></a>Demo</h2><p>I created a small demo to demonstrate basic functionality. In this demo two sockets are created: one for polling by the client, and second one for streaming data from server.</p>
 <img src="/blog/esp-httpd/websocket_demo.png" alt="WebSockets demo" title="WebSockets demo">
 <p>Code is available on <a href="https://github.com/lujji/esp-httpd" target="_blank" rel="external">github</a>.</p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;p&gt;This article will cover implementing a basic HTTP server on top of LwIP for ESP8266 and dive into the implementation of WebSockets.&lt;/p&gt;
-    
-    </summary>
-    
-    
-      <category term="esp8266" scheme="http://lujji.github.io/blog/tags/esp8266/"/>
-    
-      <category term="web" scheme="http://lujji.github.io/blog/tags/web/"/>
-    
-      <category term="freertos" scheme="http://lujji.github.io/blog/tags/freertos/"/>
-    
-  </entry>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://lujji.github.io/blog/esp-httpd/" data-id="ciykj62xk0000gis6re1n1iof" class="article-share-link">Share</a>
+      
+        <a href="http://lujji.github.io/blog/esp-httpd/#disqus_thread" class="article-comment-link">Comments</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/blog/tags/esp8266/">esp8266</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/blog/tags/freertos/">freertos</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/blog/tags/web/">web</a></li></ul>
+
+    </footer>
+  </div>
   
-  <entry>
-    <title>Reverse-engineering ST-Link firmware - Part 2</title>
-    <link href="http://lujji.github.io/blog/reverse-engineering-stlink-firmware-part2/"/>
-    <id>http://lujji.github.io/blog/reverse-engineering-stlink-firmware-part2/</id>
-    <published>2016-10-17T00:00:00.000Z</published>
-    <updated>2016-10-17T23:00:28.436Z</updated>
     
-    <content type="html"><![CDATA[<p>This is the second part of ST-Link reverse-engineering, where I cover dumping the firmware, extracting and reverse-engineering the bootloader, and finally, patching the bootloader in order to disable Level 1 protection.</p>
-<a id="more"></a>
-<hr>
-<h2 id="Dumping-the-bootloader"><a href="#Dumping-the-bootloader" class="headerlink" title="Dumping the bootloader"></a>Dumping the bootloader</h2><p>Dumping the firmware was the easiest part. Once the bootloader passes control to our code, we initialize clocks and UART. After that we send two marker bytes to indicate beginning of the firmware and then simply read all the flash memory starting from the address 0x08000000 and send it over UART one byte at a time. Since I was too lazy to implement any flow control, I opted for modest 9600 baud and added a small delay after each byte transfer just to make sure that I don’t hit a buffer overrun on my UART-USB converter. TX pin on UART2 is PA2 (there are solder-bridges for RX and TX on Discovery boards).</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</div><div class="line">    clock_setup();</div><div class="line">    usart_setup();</div><div class="line">    gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_50_MHZ,</div><div class="line">            GPIO_CNF_OUTPUT_PUSHPULL, LED_PIN);</div><div class="line">    gpio_clear(GPIOA, LED_PIN);</div><div class="line"></div><div class="line">    usart_send_blocking(USART2, <span class="number">0xAB</span>);</div><div class="line">    usart_send_blocking(USART2, <span class="number">0xCD</span>);</div><div class="line"></div><div class="line">    <span class="keyword">for</span> (<span class="keyword">uint32_t</span> addr = <span class="number">0x08000000</span>; addr &lt;= <span class="number">0x08010000</span>; addr++) &#123;</div><div class="line">        usart_send_blocking(USART2, *((<span class="keyword">uint16_t</span> *) addr));</div><div class="line">        delay(<span class="number">1</span>);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="keyword">while</span> (<span class="number">1</span>) &#123;</div><div class="line">        <span class="comment">/* loop forever */</span></div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<p>After I accidentally triggered mass-erase on my Nucleo board, I had only one board with ST-Link v2-1 left. I didn’t want to risk, so I tried dumping a Chinese ST-Link v2 clone first. Once the update process finished, the programmer immediately started to spit out it’s own flash contents over the serial interface.</p>
-<img src="/blog/reverse-engineering-stlink-firmware-part2/stlink_dump.png" alt="note: screenshot shows dumping of ST-Link v2-1" title="note: screenshot shows dumping of ST-Link v2-1">
-<p>As I mentioned before, visualizing raw binary data is a very useful trick during analysis. Let’s see what the dump looks like.</p>
-<img src="/blog/reverse-engineering-stlink-firmware-part2/dump_visualization.png" alt="Firmware dump visualization" title="Firmware dump visualization">
-<p>We clearly see the separation between the bootloader and user code. Most importantly, there is a small chunk of data near the end of the bootloader section (later I discovered these bytes are written by the bootloader at the end of the update process to indicate a valid firmware). We can also see that first two pages of memory in the user code section were erased and now contain our dumper code.</p>
-<p>As I mentioned in Part 1, my attempt to access the microcontroller through a debugger resulted in flash mass-erase. According to the reference manual, it implies that Level 1 protection is activated: <em>“Level 1 protection allows to recover a programmed part by erasing the entire Flash content. This is done by re-programming the RDP option byte from Level 1 to Level 0.”</em> The <a href="http://www.st.com/content/ccc/resource/technical/document/programming_manual/10/98/e8/d4/2b/51/4b/f5/CD00283419.pdf/files/CD00283419.pdf/jcr:content/translations/en.CD00283419.pdf" target="_blank" rel="external">programming manual</a> tells us where the option bytes are located.</p>
-<img src="/blog/reverse-engineering-stlink-firmware-part2/option_bytes.png" alt="" ""="" title="">
-<p>Before we move on to reverse-engineering the binary, let’s extract the bootloader section first, excluding the version bytes near the end:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ cat stlink_v2_dump.bin | head -c 15360 &gt; ST-Link_bootloader.bin</div></pre></td></tr></table></figure></p>
-<p>At this point, flashing bootloader onto an empty microcontroller will make the update utility think a blank ST-Link is connected. It will let you choose which firmware to flash, however the results will not be any different from what we achieved before by tricking the updater into flashing a different firmware.</p>
-<h2 id="Reverse-engineering"><a href="#Reverse-engineering" class="headerlink" title="Reverse-engineering"></a>Reverse-engineering</h2><p>There are many disassemblers available for ARM out there. One of them even works. Unfortunately, IDA demo version does not support binary files. I tried using radare2, but after a while decided that I don’t have a spare lifetime to learn how to use all of it’s hot-keys and commands.</p>
-<p>Eventually, I came across Hopper, which is a cross-platform disassembler. Demo version is limited to 30min sessions and does not allow saving projects or exporting files. That seemed good enough for me, so I gave it a try.</p>
-<p>First things first, I searched for <code>0x1FFFF800</code> and sure enough - this constant was present.</p>
-<img src="/blog/reverse-engineering-stlink-firmware-part2/hopper.png" alt="Hopper" title="Hopper">
-<p>It is referenced only once (hitting <code>X</code> lists all the references). If we follow the reference, we end up in a subroutine that presumably sets up the option bytes. Hopper can also generate pseudo-code. It’s not that great with loops and conditionals, but comes in handy when analyzing arithmetic operations.<br><img src="/blog/reverse-engineering-stlink-firmware-part2/set_option_bytes.png" alt="Pseudo-code" title="Pseudo-code"></p>
-<p>This function is called only once, and if we follow the reference we end up in a section with quite a few function calls. Control flow graph shows that we identified main program loop at 0x2198. I tried visiting all the functions and guessing what they do.</p>
-<img src="/blog/reverse-engineering-stlink-firmware-part2/main_loop.png" alt="Main loop" title="Main loop">
-<h2 id="Disabling-protection"><a href="#Disabling-protection" class="headerlink" title="Disabling protection"></a>Disabling protection</h2><p>We know that the function call to <code>option_bytes_config</code> is located at 0x21B2 in the binary dump. Let’s try to ‘nop’ it and see what we get. NOP is a pseudo-instruction on ARM cores, so we have to use something like ‘mov r8,r8’ to skip a cycle.</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">$ <span class="built_in">echo</span> <span class="string">"mov r8, r8"</span> | arm-none-eabi-as -mthumb -march=armv7 &amp;&amp; arm-none-eabi-objdump <span class="_">-d</span> a.out</div><div class="line">...</div><div class="line">   0:   46c0            nop                     ; (mov r8, r8)</div></pre></td></tr></table></figure>
-<p>Branch instruction occupies 4 bytes, which means we have to patch <code>C0 46 C0 46</code> to ‘nop’ the function call.</p>
-<p>Next we flash the patched bootloader and use the updater utility to upload ST-Link firmware. Now let’s try dumping the firmware with openocd to see if protection is still enabled.</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">$ openocd <span class="_">-f</span> interface/stlink-v2.cfg -c <span class="string">'transport select hla_swd'</span> \</div><div class="line">          <span class="_">-f</span> target/stm32f1x.cfg -c <span class="string">'adapter_khz 4000'</span> -c init -c <span class="string">'reset halt'</span> \</div><div class="line">          -c <span class="string">'dump_image dump.bin 0x08000000 0x10000'</span> -c shutdown</div></pre></td></tr></table></figure>
-<p>And this is what we get:<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">...</div><div class="line">stm32f1x.cpu: target state: halted</div><div class="line">target halted due to debug-request, current mode: Thread</div><div class="line">xPSR: 0x01000000 pc: 0x08002764 msp: 0x20000800</div><div class="line">dumped 65536 bytes in 0.427944s (149.552 KiB/s)</div></pre></td></tr></table></figure></p>
-<p>Success!</p>
-<h2 id="Conclusion"><a href="#Conclusion" class="headerlink" title="Conclusion"></a>Conclusion</h2><p>After I dumped the firmware from the ST-Link v2 clone I successfully repeated the same procedure for an ST-Link v2-1. I used the same approach for removing protection, although the main program loop was a bit trickier to find. Being able to use a debugger makes it significantly easier to study the functionality of the bootloader and main firmware.</p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;p&gt;This is the second part of ST-Link reverse-engineering, where I cover dumping the firmware, extracting and reverse-engineering the bootloader, and finally, patching the bootloader in order to disable Level 1 protection.&lt;/p&gt;
-    
-    </summary>
-    
-    
-      <category term="reverse-engineering" scheme="http://lujji.github.io/blog/tags/reverse-engineering/"/>
-    
-      <category term="st-link" scheme="http://lujji.github.io/blog/tags/st-link/"/>
-    
-  </entry>
+<nav id="article-nav">
   
-  <entry>
-    <title>Reverse-engineering ST-Link firmware</title>
-    <link href="http://lujji.github.io/blog/reverse-engineering-stlink-firmware/"/>
-    <id>http://lujji.github.io/blog/reverse-engineering-stlink-firmware/</id>
-    <published>2016-10-13T01:11:48.000Z</published>
-    <updated>2016-10-16T03:27:47.236Z</updated>
-    
-    <content type="html"><![CDATA[<p>This is the first part of ST-Link reverse-engineering, where I cover analyzing and decompiling the updater utility, decrypting and encrypting firmware binaries and running custom code on ST-Link v2/2-1 programmer.</p>
-<a id="more"></a>
-<hr>
-<h2 id="Preface"><a href="#Preface" class="headerlink" title="Preface"></a>Preface</h2><p>ST-Link 2 is a neat programmer. It can program, debug and even supports SWO Trace. The more I use it, the more I seem to forget about this <a href="abomination.jpg">abomination</a>. Recently, I came across a Nucleo board with an ST-Link v2-1, which in addition to all the regular features acts as a virtual COM port (VCP) and supports drag-n-drop upload. Sweet! Although I wasn’t very excited about the drag-n-drop thing, having UART for debugging on the same board comes in real handy. After studying the schematics I realized that the programmer is pretty much identical to a regular ST-Link v2 in terms of hardware. The only big difference is that v2-1 uses an MCU with 128k of flash versus 64k on v2 programmer. That made me think if there are any ways of getting UART on a ‘regular’ ST-Link. And so it began..</p>
-<h2 id="Research"><a href="#Research" class="headerlink" title="Research"></a>Research</h2><p>EEVBlog forum user <code>eliocor</code> was kind enough to help and did a lot of research on the topic. He pointed me towards <a href="https://my.st.com/public/STe2ecommunities/mcu/Lists/cortex_mx_stm32/Flat.aspx?RootFolder=%2Fpublic%2FSTe2ecommunities%2Fmcu%2FLists%2Fcortex_mx_stm32%2FDifference%20between%20ST-LINKV2-1%20and%20ST-LINKV2&amp;FolderCTID=0x01200200770978C69A1141439FE559EB459D7580009C4E14902C3CDE46A77F0FFD06506F5B&amp;currentviews=194" target="_blank" rel="external">this</a> discussion on the ST forums. According to the ST employee, there are 4 versions of ST-Link 2: ST-Link/v2, ST-Link/v2-A, ST-Link/v2-B and ST-Link/v2-1. Presumably, A, B and 2-1 versions all have UART support and a different bootloader. ST-Link/v2-1 also uses a larger MCU. Looking at windows drivers reveals a number of different PID combinations.</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">VID_0483&amp;PID_3748</div><div class="line">VID_0483&amp;PID_374A&amp;MI_00</div><div class="line">VID_0483&amp;PID_374B&amp;MI_00</div><div class="line">VID_0483&amp;PID_374A&amp;MI_01</div></pre></td></tr></table></figure>
-<p>Initially, I tried connecting to the MCU with J-Link and see if we get anything useful. I launched J-Link Commander, typed ‘connect’ and was very surprised.</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">Active read protected STM32 device detected. This could cause problems during flash download.</div><div class="line">Device will be unsecured now.</div><div class="line">Note: Unsecuring will trigger a mass erase of the internal flash.</div></pre></td></tr></table></figure>
-<p>MCU committed suicide. Flash was completely erased and I lost my ST-Link. Apparently, J-Link linux utility was ‘kind’ enough to remove option bytes without even asking the user.</p>
-<p>Despite the fact that I lost my programmer, I still learned some useful information. Being able to unsecure the chip by erasing the flash contents suggests that Level 1 protection is active (more on that in Part 2).</p>
-<h2 id="Analyzing-the-updater"><a href="#Analyzing-the-updater" class="headerlink" title="Analyzing the updater"></a>Analyzing the updater</h2><p>There is an article by Taylor Killian written in 2013, which covers extracting ST-Link firmware from the updater executable. At first I tried following the author’s approach and disassembling the windows executable. I searched for string references and soon found a part of code that decides which firmware to flash based on the ID of the programmer. It was implemented as a switch statement and the disassembly looked like a simple jump table. I fiddled around with various conditional jumps and was able to ‘help’ the program flash a different firmware into the programmer. After a few attempts I detached st-link from the virtual box and dmesg greeted me with the following:</p>
-<img src="/blog/reverse-engineering-stlink-firmware/dmesg.png" alt="" ""="" title="">
-<p>Hah, piece of cake! I tried opening /dev/ttyACM2 - no errors. Then I connected a dev-board and tried flashing it with my upgraded st-link. It didn’t work. The official flash utility failed with ‘ST-Link USB error’ and openocd refused to see the programmer at all. Moreover, when I unplugged and reattached st-link, CDC interface was gone. For some reason st-link refused to exit DFU mode.</p>
-<p>I played around with windows update utility but quickly got bored. Luckily, ST were kind enough to have a cross-platform updater written in java, so that we no longer have to fire up a virtual machine just to update the firmware.</p>
-<p>Extracting STLinkUpgrade.jar reveals some interesting binaries. I tried to match them with corresponding labels from the updater:</p>
-<ul>
-<li><strong>f1_x.bin</strong>: ST-Link v1 firmwares. Not interested.</li>
-<li><strong>f2_1.bin</strong>: “STM32 only”. Appears to be for Discovery boards.</li>
-<li><strong>f2_2.bin</strong>: “STM8 only”. Also not interested.</li>
-<li><strong>f2_3.bin</strong>: “STM32+STM8”. Standalone programmer, also used in Chinese clones.</li>
-<li><strong>f2_4.bin</strong>: “STM32+MSD+VCP”. This one is for ST-Link v2-1 found on Nucleo boards.</li>
-<li><strong>f2_5.bin</strong>: “STM32+Audio”. No idea.</li>
-</ul>
-<p>So the firmware with UART support is obviously f2_4, but there is a slight problem: ST-Link v2-1 on a Nucleo board features an STM32F103CBT6 microcontroller with 128k of flash, so it’s unlikely that we’ll ever manage to squeeze it into an F103C8. The firmware I’m most interested in is f2_5 (“STM32+Audio”) - I have no idea what “Audio” means, but we know that there are at least two versions of ST-Link with UART capability so, presumably, this firmware is for one of them.</p>
-<p>The first obvious step was to rename these files inside the .jar archive and make the updater flash the firmware that we want. Unfortunately, the results were the same as with patching the windows executable.</p>
-<p>The next step was to figure out what format these files have. When working with unknown data, it’s always a good idea to have a visual representation of some sort. Judging by the uniform distribution of data we can suspect some encryption or archiving involved.</p>
-<img src="/blog/reverse-engineering-stlink-firmware/histogram.png" alt="Histogram of firmware data" title="Histogram of firmware data">
-<p>Now, it’s no secret that these binaries are encrypted with AES-128 and the key is stored inside the executable in plain ASCII, which was covered in the article I mentioned earlier. However, since I was planning to use the application itself to perform encryption/decryption, this information was of little use to me. So without any further investigation I went on to decompiling the updater utility.</p>
-<p>I used <a href="https://bitbucket.org/mstrobel/procyon/downloads" target="_blank" rel="external">procyon decompiler</a>, reconstructed function calls and after a while was able to decrypt the firmware binary. Encryption key was <del>“worst HAL libraries”</del> “best performance”. Finally, I’ve hacked everything into a command-line utility, which is able to encrypt and decrypt binary images (code is available on <a href="https://github.com/lujji/st-decrypt" target="_blank" rel="external">github</a>).</p>
-<p>Let’s take a look at the decrypted file and search for known Unicode strings.</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">0x00008ee0: 80 14 00 20 04 03 09 04 26 03 53 00 54 00 4d 00  ... ....&amp;.S.T.M.</div><div class="line">0x00008ef0: 69 00 63 00 72 00 6f 00 65 00 6c 00 65 00 63 00  i.c.r.o.e.l.e.c.</div><div class="line">0x00008f00: 74 00 72 00 6f 00 6e 00 69 00 63 00 73 00 00 00  t.r.o.n.i.c.s...</div><div class="line">0x00008f10: 1a 03 53 00 54 00 4d 00 33 00 32 00 20 00 53 00  ..S.T.M.3.2. .S.</div><div class="line">0x00008f20: 54 00 4c 00 69 00 6e 00 6b 00 00 00 1c 03 53 00  T.L.i.n.k.....S.</div><div class="line">0x00008f30: 54 00 2d 00 4c 00 69 00 6e 00 6b 00 20 00 44 00  T.-.L.i.n.k. .D.</div><div class="line">0x00008f40: 65 00 62 00 75 00 67 00 2d e9 f8 4f 00 24 fe f7  e.b.u.g.-..O.$..</div><div class="line">0x00008f50: 3d fa 82 46 00 22 4f f4 fa 61 04 20 fb f7 ee fc  =..F.&quot;O..a. ....</div></pre></td></tr></table></figure>
-<p>Looks promissing, right? ;)</p>
-<p>The next step was to change something in the decrypted firmware, encrypt it and send back to the device. It worked flawlessly. As a sanity check, I tried various combinations, including flashing a firmware consisting entirely of 0xFF bytes, just to make sure that the firmware is indeed accepted and written to the device.</p>
-<p>At this point I was not interested in analyzing the firmware any further. I realized that the bootloader plays an important role, and I won’t be able to proceed without obtaining it.</p>
-<h2 id="Hello-world"><a href="#Hello-world" class="headerlink" title="Hello, world"></a>Hello, world</h2><p>Knowing how to encrypt the firmware, I could flash anything I want. However, I had no idea how the bootloader decides whether or not the firmware is OK before it passes control to it. Therefore, I needed to test if the code would actually get executed on the device.</p>
-<p>I decided to write a ‘Hello world’ program that would blink an LED on PA5 (SWCLK on the SWD connector). The first thing to do was to alter the linker script and offset the ROM section by the size of the bootloader section.<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">MEMORY</div><div class="line">&#123;</div><div class="line">    rom (rx) : ORIGIN = 0x08004000, LENGTH = 64K - 0x4000</div><div class="line">    ram (rwx) : ORIGIN = 0x20000000, LENGTH = 20K</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
-<p>The code is rather self-explanatory.</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</div><div class="line">    rcc_clock_setup_in_hse_8mhz_out_72mhz();</div><div class="line">    rcc_periph_clock_enable(RCC_GPIOA);</div><div class="line">    gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_50_MHZ,</div><div class="line">        GPIO_CNF_OUTPUT_PUSHPULL, GPIO5);</div><div class="line"></div><div class="line">    <span class="keyword">while</span> (<span class="number">1</span>) &#123;</div><div class="line">        gpio_toggle(GPIOA, GPIO5);</div><div class="line">        delay_ms(<span class="number">250</span>);</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<p>After compiling the binary I used my utility to encrypt the binary.</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ java -jar st_decrypt.jar -k <span class="string">"best performance"</span> -i main.bin -o f2_3.bin --encrypt</div></pre></td></tr></table></figure>
-<p>Next, we replace the original <code>f2_3.bin</code> with our own, compress the jar archive and update the firmware on the st-link. For this test I used my F4 Discovery board. The update process finishes with an error saying that it can’t exit DFU mode. Let’s take a look at the board now.</p>
-<img src="/blog/reverse-engineering-stlink-firmware/blinking_led.jpg" alt="Current limiting? Never heard of." title="Current limiting? Never heard of.">
-<p>It was the first time I was excited about a blinking LED on a development board ;) Once you unplug the power, st-link would start in DFU mode again (as it normally does). Each st-link related command like writing to flash or reading target voltage would first ask the st-link to exit DFU mode and start executing main firmware code.</p>
-<p>Now I have a way of executing my own code on the programmer. The next obvious step is to retrieve the bootloader, which I’ll cover in Part 2.</p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;p&gt;This is the first part of ST-Link reverse-engineering, where I cover analyzing and decompiling the updater utility, decrypting and encrypting firmware binaries and running custom code on ST-Link v2/2-1 programmer.&lt;/p&gt;
-    
-    </summary>
-    
-    
-      <category term="reverse-engineering" scheme="http://lujji.github.io/blog/tags/reverse-engineering/"/>
-    
-      <category term="st-link" scheme="http://lujji.github.io/blog/tags/st-link/"/>
-    
-  </entry>
   
-  <entry>
-    <title>Adding Trace support to ST-Link clones</title>
-    <link href="http://lujji.github.io/blog/stlink-clone-trace/"/>
-    <id>http://lujji.github.io/blog/stlink-clone-trace/</id>
-    <published>2016-09-10T20:54:00.000Z</published>
-    <updated>2016-10-13T01:56:37.352Z</updated>
-    
-    <content type="html"><![CDATA[<p>When it comes to programming ST microcontrollers, I prefer to use Discovery boards (mainly because you can <a href="https://www.segger.com/jlink-st-link.html" target="_blank" rel="external">turn them into J-Link</a>). However, I got tired of carrying around the whole dev-board just for the programmer, so I ordered a cheap st-link clone due to it’s small form-factor.<br><a id="more"></a></p>
-<h2 id="The-clone"><a href="#The-clone" class="headerlink" title="The clone"></a>The clone</h2><img src="/blog/stlink-clone-trace/st-link.jpg" alt="ST-Link clone" title="ST-Link clone">
-<p>For less than 3$ you get a nice dongle in aluminium case and some wires. After taking a closer look I noticed that there is no <strong>SWO</strong> pin on the pinout. Perhaps SWIM pin would dual-function as SWO when working with STM32? Unfortunately this wasn’t the case. So what, does it mean I have to use another USB cable just for UART? No way, I’m not going back to the stone age, I want my Trace!</p>
-<h2 id="Research"><a href="#Research" class="headerlink" title="Research"></a>Research</h2><p>Trace is a very neat feature. One of the common uses is redirecting <code>stdout</code> stream to stimulus port 0 in order to printf debugging information. All recent versions of ST-Link v2 support this feature, so the first thing I did was check if the dongle is running the original ST-Link firmware. I launched ST-LINK Utility and updated the firmware with no issues whatsoever. So now we know that the dongle is running the latest official firmware and supports trace functionality.</p>
-<img src="/blog/stlink-clone-trace/schematic.png" alt="ST-Link schematic" title="ST-Link schematic">
-<p>I couldn’t find schematics for a stand-alone programmer so I assumed it would be identical to the one present on Discovery board. PA10 is used for SWO so the next step would be pretty straight-forward.</p>
-<h2 id="Modding"><a href="#Modding" class="headerlink" title="Modding"></a>Modding</h2><img src="/blog/stlink-clone-trace/st-link-mod.jpg" alt="5V pin converted into SWO" title="5V pin converted into SWO">
-<p>I’ve cut the trace from 5V pin right after the via and soldered some bodge-wire to PA10 (pin 31). I also added a 22&#937; resistor in case something goes horribly wrong. Initially I wanted to use SWIM pin since I don’t care about STM8 and it would only require desoldering one resistor without cutting any traces, but the 5V pin was easier to reach.</p>
-<p>Time for some testing.<br><img src="/blog/stlink-clone-trace/trace-screenshot.png" alt="" ""="" title=""></p>
-<p>SWO Trace works perfectly fine which makes the dongle much more useful.</p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;p&gt;When it comes to programming ST microcontrollers, I prefer to use Discovery boards (mainly because you can &lt;a href=&quot;https://www.segger.com/jlink-st-link.html&quot;&gt;turn them into J-Link&lt;/a&gt;). However, I got tired of carrying around the whole dev-board just for the programmer, so I ordered a cheap st-link clone due to it’s small form-factor.&lt;br&gt;
-    
-    </summary>
-    
-    
-      <category term="st-link" scheme="http://lujji.github.io/blog/tags/st-link/"/>
-    
-      <category term="stm32" scheme="http://lujji.github.io/blog/tags/stm32/"/>
-    
-      <category term="trace" scheme="http://lujji.github.io/blog/tags/trace/"/>
-    
-      <category term="swo" scheme="http://lujji.github.io/blog/tags/swo/"/>
-    
-  </entry>
+    <a href="/blog/reverse-engineering-stlink-firmware-part2/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Reverse-engineering ST-Link firmware - Part 2</div>
+    </a>
   
-</feed>
+</nav>
+
+  
+</article>
+
+
+<section id="comments">
+  <div id="disqus_thread">
+    <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  </div>
+</section>
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2017/01/">January 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2016/10/">October 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2016/09/">September 2016</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/blog/esp-httpd/">HTTP Server with WebSockets on ESP8266</a>
+          </li>
+        
+          <li>
+            <a href="/blog/reverse-engineering-stlink-firmware-part2/">Reverse-engineering ST-Link firmware - Part 2</a>
+          </li>
+        
+          <li>
+            <a href="/blog/reverse-engineering-stlink-firmware/">Reverse-engineering ST-Link firmware</a>
+          </li>
+        
+          <li>
+            <a href="/blog/stlink-clone-trace/">Adding Trace support to ST-Link clones</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2017 lujji<br>      
+      lujji at protonmail com
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/blog/" class="mobile-nav-link">Home</a>
+  
+    <a href="/blog/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+<script>
+  var disqus_shortname = 'lujji';
+  
+  var disqus_url = 'http://lujji.github.io/blog/esp-httpd/';
+  
+  (function(){
+    var dsq = document.createElement('script');
+    dsq.type = 'text/javascript';
+    dsq.async = true;
+    dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/blog/fancybox/jquery.fancybox.css">
+  <script src="/blog/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/blog/js/script.js"></script>
+
+  </div>
+</body>
+</html>
