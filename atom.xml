@@ -90,9 +90,9 @@
     
       <category term="esp8266" scheme="http://lujji.github.io/blog/tags/esp8266/"/>
     
-      <category term="web" scheme="http://lujji.github.io/blog/tags/web/"/>
-    
       <category term="freertos" scheme="http://lujji.github.io/blog/tags/freertos/"/>
+    
+      <category term="web" scheme="http://lujji.github.io/blog/tags/web/"/>
     
   </entry>
   
