@@ -23,13 +23,6 @@
     </url>
 
     <url>
-        <loc>http://lujji.github.io/blog/tags/reverse-engineering/</loc>
-        <lastmod>2016-10-17T23:00:28.436Z</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.2</priority>
-    </url>
-
-    <url>
         <loc>http://lujji.github.io/blog/tags/st-link/</loc>
         <lastmod>2016-10-17T23:00:28.436Z</lastmod>
         <changefreq>weekly</changefreq>
@@ -38,21 +31,49 @@
 
     <url>
         <loc>http://lujji.github.io/blog/tags/esp8266/</loc>
-        <lastmod>2017-02-04T16:01:36.291Z</lastmod>
+        <lastmod>2017-02-12T23:35:26.483Z</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.2</priority>
     </url>
 
     <url>
         <loc>http://lujji.github.io/blog/tags/freertos/</loc>
-        <lastmod>2017-02-04T16:01:36.291Z</lastmod>
+        <lastmod>2017-02-12T23:35:26.483Z</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.2</priority>
     </url>
 
     <url>
         <loc>http://lujji.github.io/blog/tags/web/</loc>
-        <lastmod>2017-02-04T16:01:36.291Z</lastmod>
+        <lastmod>2017-02-12T23:35:26.483Z</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.2</priority>
+    </url>
+
+    <url>
+        <loc>http://lujji.github.io/blog/tags/stlink/</loc>
+        <lastmod>2017-02-16T00:30:54.775Z</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.2</priority>
+    </url>
+
+    <url>
+        <loc>http://lujji.github.io/blog/tags/blackmagic/</loc>
+        <lastmod>2017-02-16T00:30:54.775Z</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.2</priority>
+    </url>
+
+    <url>
+        <loc>http://lujji.github.io/blog/tags/reverse-engineering/</loc>
+        <lastmod>2017-02-16T00:30:54.775Z</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.2</priority>
+    </url>
+
+    <url>
+        <loc>http://lujji.github.io/blog/tags/patching/</loc>
+        <lastmod>2017-02-16T00:30:54.775Z</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.2</priority>
     </url>

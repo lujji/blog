@@ -15,7 +15,7 @@
 <meta property="og:image" content="http://lujji.github.io/blog/blog/esp-httpd/http_test.png">
 <meta property="og:image" content="http://lujji.github.io/blog/blog/esp-httpd/http_test2.png">
 <meta property="og:image" content="http://lujji.github.io/blog/blog/esp-httpd/websocket_demo.png">
-<meta property="og:updated_time" content="2017-02-04T16:01:36.291Z">
+<meta property="og:updated_time" content="2017-02-12T23:35:26.483Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="HTTP server with WebSockets on ESP8266">
 <meta name="twitter:description" content="This article will cover implementing a basic HTTP server on top of LwIP for ESP8266 and dive into the implementation of WebSockets.">
@@ -136,7 +136,7 @@
 <li>Take the <code>Sec-WebSocket-Key</code> part</li>
 <li>Concatenate it with GUID which is “258EAFA5-E914-47DA-95CA-C5AB0DC85B11”</li>
 <li>Calculate SHA-1 hash of the resulting string</li>
-<li>Encode hash in base-64 and send to the client</li>
+<li>Encode the hash in base-64</li>
 </ol>
 <p>Let’s first define some necessary constants inside <code>httpd.c</code>.</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">const</span> <span class="keyword">char</span> WS_HEADER[] = <span class="string">"Upgrade: websocket\r\n"</span>;</div><div class="line"><span class="keyword">const</span> <span class="keyword">char</span> WS_GUID[] = <span class="string">"258EAFA5-E914-47DA-95CA-C5AB0DC85B11"</span>;</div><div class="line"><span class="keyword">const</span> <span class="keyword">char</span> WS_KEY[] = <span class="string">"Sec-WebSocket-Key: "</span>;</div><div class="line"><span class="keyword">const</span> <span class="keyword">char</span> WS_RSP[] = <span class="string">"HTTP/1.1 101 Switching Protocols\r\n"</span> \</div><div class="line">                      <span class="string">"Upgrade: websocket\r\n"</span> \</div><div class="line">                      <span class="string">"Connection: Upgrade\r\n"</span> \</div><div class="line">                      <span class="string">"Sec-WebSocket-Accept: %s\r\n\r\n"</span>;</div></pre></td></tr></table></figure>
@@ -158,7 +158,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://lujji.github.io/blog/esp-httpd/" data-id="ciyrfgsyb0000qgs60psr0hyj" class="article-share-link">Share</a>
+      <a data-url="http://lujji.github.io/blog/esp-httpd/" data-id="ciz7njx3p0001vns6gxtbyz88" class="article-share-link">Share</a>
       
         <a href="http://lujji.github.io/blog/esp-httpd/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -170,6 +170,15 @@
   
     
 <nav id="article-nav">
+  
+    <a href="/blog/installing-blackmagic-via-stlink-bootloader/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          Installing Black Magic via ST-Link bootloader
+        
+      </div>
+    </a>
   
   
     <a href="/blog/reverse-engineering-stlink-firmware-part2/" id="article-nav-older" class="article-nav-link-wrap">
@@ -199,7 +208,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2017/01/">January 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2016/10/">October 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2016/09/">September 2016</a></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2017/02/">February 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2017/01/">January 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2016/10/">October 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2016/09/">September 2016</a></li></ul>
     </div>
   </div>
 
@@ -210,6 +219,10 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/blog/installing-blackmagic-via-stlink-bootloader/">Installing Black Magic via ST-Link bootloader</a>
+          </li>
         
           <li>
             <a href="/blog/esp-httpd/">HTTP server with WebSockets on ESP8266</a>

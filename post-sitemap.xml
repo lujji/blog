@@ -7,8 +7,16 @@
     </url>
 
     <url>
+        <loc>http://lujji.github.io/blog/installing-blackmagic-via-stlink-bootloader/</loc>
+        <lastmod>2017-02-16T00:30:54.775Z</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.6</priority>
+
+    </url>
+
+    <url>
         <loc>http://lujji.github.io/blog/esp-httpd/</loc>
-        <lastmod>2017-02-04T16:01:36.291Z</lastmod>
+        <lastmod>2017-02-12T23:35:26.483Z</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.6</priority>
 
