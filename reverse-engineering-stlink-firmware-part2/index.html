@@ -97,7 +97,7 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <p>This is the second part of ST-Link reverse-engineering, where I cover dumping the firmware, extracting and reverse-engineering the bootloader, and finally, patching the bootloader in order to disable Level 1 protection.</p>
+        <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.5.1/katex.min.css"><p>This is the second part of ST-Link reverse-engineering, where I cover dumping the firmware, extracting and reverse-engineering the bootloader, and finally, patching the bootloader in order to disable Level 1 protection.</p>
 <a id="more"></a>
 <hr>
 <h2 id="Dumping-the-bootloader"><a href="#Dumping-the-bootloader" class="headerlink" title="Dumping the bootloader"></a>Dumping the bootloader</h2><p>Dumping the firmware was the easiest part. Once the bootloader passes control to our code, we initialize clocks and UART. After that we send two marker bytes to indicate beginning of the firmware and then simply read all the flash memory starting from the address 0x08000000 and send it over UART one byte at a time. Since I was too lazy to implement any flow control, I opted for modest 9600 baud and added a small delay after each byte transfer just to make sure that I don’t hit a buffer overrun on my UART-USB converter. TX pin on UART2 is PA2 (there are solder-bridges for RX and TX on Discovery boards).</p>
@@ -130,7 +130,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://lujji.github.io/blog/reverse-engineering-stlink-firmware-part2/" data-id="ciz7njx420004vns6nzcpspot" class="article-share-link">Share</a>
+      <a data-url="http://lujji.github.io/blog/reverse-engineering-stlink-firmware-part2/" data-id="cizvbnjbk0006yis6fp8vw3mv" class="article-share-link">Share</a>
       
         <a href="http://lujji.github.io/blog/reverse-engineering-stlink-firmware-part2/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -180,7 +180,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2017/02/">February 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2017/01/">January 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2016/10/">October 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2016/09/">September 2016</a></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2017/03/">March 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2017/02/">February 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2017/01/">January 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2016/10/">October 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2016/09/">September 2016</a></li></ul>
     </div>
   </div>
 
@@ -191,6 +191,10 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/blog/bare-metal-programming-stm8/">Bare metal programming: STM8</a>
+          </li>
         
           <li>
             <a href="/blog/installing-blackmagic-via-stlink-bootloader/">Installing Black Magic via ST-Link bootloader</a>
@@ -206,10 +210,6 @@
         
           <li>
             <a href="/blog/reverse-engineering-stlink-firmware/">Reverse-engineering ST-Link firmware</a>
-          </li>
-        
-          <li>
-            <a href="/blog/stlink-clone-trace/">Adding Trace support to ST-Link clones</a>
           </li>
         
       </ul>
