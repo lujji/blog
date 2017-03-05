@@ -97,7 +97,7 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.5.1/katex.min.css"><p>This is the second part of ST-Link reverse-engineering, where I cover dumping the firmware, extracting and reverse-engineering the bootloader, and finally, patching the bootloader in order to disable Level 1 protection.</p>
+        <p>This is the second part of ST-Link reverse-engineering, where I cover dumping the firmware, extracting and reverse-engineering the bootloader, and finally, patching the bootloader in order to disable Level 1 protection.</p>
 <a id="more"></a>
 <hr>
 <h2 id="Dumping-the-bootloader"><a href="#Dumping-the-bootloader" class="headerlink" title="Dumping the bootloader"></a>Dumping the bootloader</h2><p>Dumping the firmware was the easiest part. Once the bootloader passes control to our code, we initialize clocks and UART. After that we send two marker bytes to indicate beginning of the firmware and then simply read all the flash memory starting from the address 0x08000000 and send it over UART one byte at a time. Since I was too lazy to implement any flow control, I opted for modest 9600 baud and added a small delay after each byte transfer just to make sure that I don’t hit a buffer overrun on my UART-USB converter. TX pin on UART2 is PA2 (there are solder-bridges for RX and TX on Discovery boards).</p>
@@ -130,7 +130,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://lujji.github.io/blog/reverse-engineering-stlink-firmware-part2/" data-id="cizvbnjbk0006yis6fp8vw3mv" class="article-share-link">Share</a>
+      <a data-url="http://lujji.github.io/blog/reverse-engineering-stlink-firmware-part2/" data-id="cizx1e3yi000aaqs6g27va4t9" class="article-share-link">Share</a>
       
         <a href="http://lujji.github.io/blog/reverse-engineering-stlink-firmware-part2/#disqus_thread" class="article-comment-link">Comments</a>
       

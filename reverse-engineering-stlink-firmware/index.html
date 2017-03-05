@@ -94,7 +94,7 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.5.1/katex.min.css"><p>This is the first part of ST-Link reverse-engineering, where I cover analyzing and decompiling the updater utility, decrypting and encrypting firmware binaries and running custom code on ST-Link v2/2-1 programmer.</p>
+        <p>This is the first part of ST-Link reverse-engineering, where I cover analyzing and decompiling the updater utility, decrypting and encrypting firmware binaries and running custom code on ST-Link v2/2-1 programmer.</p>
 <a id="more"></a>
 <hr>
 <h2 id="Preface"><a href="#Preface" class="headerlink" title="Preface"></a>Preface</h2><p>ST-Link 2 is a neat programmer. It can program, debug and even supports SWO Trace. The more I use it, the more I seem to forget about this <a href="abomination.jpg">abomination</a>. Recently, I came across a Nucleo board with an ST-Link v2-1, which in addition to all the regular features acts as a virtual COM port (VCP) and supports drag-n-drop upload. Sweet! Although I wasn’t very excited about the drag-n-drop thing, having UART for debugging on the same board comes in real handy. After studying the schematics I realized that the programmer is pretty much identical to a regular ST-Link v2 in terms of hardware. The only big difference is that v2-1 uses an MCU with 128k of flash versus 64k on v2 programmer. That made me think if there are any ways of getting UART on a ‘regular’ ST-Link. And so it began..</p>
@@ -142,7 +142,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://lujji.github.io/blog/reverse-engineering-stlink-firmware/" data-id="cizvbnjaw0001yis6mgcrqo1n" class="article-share-link">Share</a>
+      <a data-url="http://lujji.github.io/blog/reverse-engineering-stlink-firmware/" data-id="cizx1e3yo000baqs66qcccjni" class="article-share-link">Share</a>
       
         <a href="http://lujji.github.io/blog/reverse-engineering-stlink-firmware/#disqus_thread" class="article-comment-link">Comments</a>
       

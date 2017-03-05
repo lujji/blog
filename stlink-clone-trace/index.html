@@ -95,7 +95,7 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.5.1/katex.min.css"><p>When it comes to programming ST microcontrollers, I prefer to use Discovery boards (mainly because you can <a href="https://www.segger.com/jlink-st-link.html" target="_blank" rel="external">turn them into J-Link</a>). However, I got tired of carrying around the whole dev-board just for the programmer, so I ordered a cheap st-link clone due to it’s small form-factor.<br><a id="more"></a></p>
+        <p>When it comes to programming ST microcontrollers, I prefer to use Discovery boards (mainly because you can <a href="https://www.segger.com/jlink-st-link.html" target="_blank" rel="external">turn them into J-Link</a>). However, I got tired of carrying around the whole dev-board just for the programmer, so I ordered a cheap st-link clone due to it’s small form-factor.<br><a id="more"></a></p>
 <h2 id="The-clone"><a href="#The-clone" class="headerlink" title="The clone"></a>The clone</h2><img src="/blog/stlink-clone-trace/st-link.jpg" alt="ST-Link clone" title="ST-Link clone">
 <p>For less than 3$ you get a nice dongle in aluminium case and some wires. After taking a closer look I noticed that there is no <strong>SWO</strong> pin on the pinout. Perhaps SWIM pin would dual-function as SWO when working with STM32? Unfortunately this wasn’t the case. So what, does it mean I have to use another USB cable just for UART? No way, I’m not going back to the stone age, I want my Trace!</p>
 <h2 id="Research"><a href="#Research" class="headerlink" title="Research"></a>Research</h2><p>Trace is a very neat feature. One of the common uses is redirecting <code>stdout</code> stream to stimulus port 0 in order to printf debugging information. All recent versions of ST-Link v2 support this feature, so the first thing I did was check if the dongle is running the original ST-Link firmware. I launched ST-LINK Utility and updated the firmware with no issues whatsoever. So now we know that the dongle is running the latest official firmware and supports trace functionality.</p>
@@ -109,7 +109,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://lujji.github.io/blog/stlink-clone-trace/" data-id="cizvbnjb30003yis6ukwwvufd" class="article-share-link">Share</a>
+      <a data-url="http://lujji.github.io/blog/stlink-clone-trace/" data-id="cizx1e3yw000daqs68ldj5tzx" class="article-share-link">Share</a>
       
         <a href="http://lujji.github.io/blog/stlink-clone-trace/#disqus_thread" class="article-comment-link">Comments</a>
       
