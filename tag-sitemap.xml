@@ -2,13 +2,6 @@
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
     <url>
-        <loc>http://lujji.github.io/blog/tags/stm32/</loc>
-        <lastmod>2016-10-13T01:56:37.352Z</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.2</priority>
-    </url>
-
-    <url>
         <loc>http://lujji.github.io/blog/tags/trace/</loc>
         <lastmod>2016-10-13T01:56:37.352Z</lastmod>
         <changefreq>weekly</changefreq>
@@ -44,50 +37,57 @@
     </url>
 
     <url>
-        <loc>http://lujji.github.io/blog/tags/st-link/</loc>
-        <lastmod>2017-03-01T00:15:25.159Z</lastmod>
+        <loc>http://lujji.github.io/blog/tags/blackmagic/</loc>
+        <lastmod>2017-03-18T21:00:59.623Z</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.2</priority>
     </url>
 
     <url>
-        <loc>http://lujji.github.io/blog/tags/blackmagic/</loc>
-        <lastmod>2017-03-01T00:15:25.159Z</lastmod>
+        <loc>http://lujji.github.io/blog/tags/java-bytecode/</loc>
+        <lastmod>2017-03-18T21:00:59.623Z</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.2</priority>
+    </url>
+
+    <url>
+        <loc>http://lujji.github.io/blog/tags/st-link/</loc>
+        <lastmod>2017-03-18T21:01:33.915Z</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.2</priority>
     </url>
 
     <url>
         <loc>http://lujji.github.io/blog/tags/reverse-engineering/</loc>
-        <lastmod>2017-03-01T00:15:25.159Z</lastmod>
+        <lastmod>2017-03-18T21:01:33.915Z</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.2</priority>
     </url>
 
     <url>
-        <loc>http://lujji.github.io/blog/tags/patching/</loc>
-        <lastmod>2017-03-01T00:15:25.159Z</lastmod>
+        <loc>http://lujji.github.io/blog/tags/stm32/</loc>
+        <lastmod>2017-03-18T21:01:33.915Z</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.2</priority>
     </url>
 
     <url>
         <loc>http://lujji.github.io/blog/tags/bare-metal/</loc>
-        <lastmod>2017-03-17T00:40:38.076Z</lastmod>
+        <lastmod>2017-03-26T15:36:12.299Z</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.2</priority>
     </url>
 
     <url>
         <loc>http://lujji.github.io/blog/tags/sdcc/</loc>
-        <lastmod>2017-03-17T00:40:38.076Z</lastmod>
+        <lastmod>2017-03-26T15:36:12.299Z</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.2</priority>
     </url>
 
     <url>
         <loc>http://lujji.github.io/blog/tags/stm8/</loc>
-        <lastmod>2017-03-17T00:40:38.076Z</lastmod>
+        <lastmod>2017-03-26T15:36:12.299Z</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.2</priority>
     </url>

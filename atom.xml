@@ -5,7 +5,7 @@
   <link href="/blog/atom.xml" rel="self"/>
   
   <link href="http://lujji.github.io/blog/"/>
-  <updated>2017-03-17T00:40:38.076Z</updated>
+  <updated>2017-03-26T15:36:12.299Z</updated>
   <id>http://lujji.github.io/blog/</id>
   
   <author>
@@ -20,7 +20,7 @@
     <link href="http://lujji.github.io/blog/bare-metal-programming-stm8/"/>
     <id>http://lujji.github.io/blog/bare-metal-programming-stm8/</id>
     <published>2017-03-04T00:00:00.000Z</published>
-    <updated>2017-03-17T00:40:38.076Z</updated>
+    <updated>2017-03-26T15:36:12.299Z</updated>
     
     <content type="html"><![CDATA[<p>This article will cover developing for STM8 series of microcontrolles completely from scratch, without using any vendor-supplied libraries.</p>
 <a id="more"></a>
@@ -73,8 +73,8 @@
 <p>Usually, in order to initialize UART one has to calculate baud and write the resulting value into the corresponding HIGH and LOW registers. Let’s see how this is done in STM8.</p>
 <img src="/blog/bare-metal-programming-stm8/uart.png" alt="What were they thinking?!" title="What were they thinking?!">
 <p>So.. you get a 16-bit value and you write the first nibble [15:12] into BRR2[7:4], then you write bits [11:4] into BRR1 and finally you write the remaining bits [3:0] into BRR2[3:0]. Seriously, what were they thinking? Why couldn’t ST just implement BRR_HIGH and BRR_LOW for the sake of it? All this bit-fiddling just seems unnecessarily complicated.</p>
-<p>Anyway, let’s move on to initialization. We’ll stick with the default 8 data bits, 1 stop bit and no parity. Since our master clock is 2MHz, for baud = 9600 we have UART_DIV = 2000000/9600 = 208 (0xD0). According to the bizarre diagram above, we end up with BRR1 = 0x0D and BRR2 = 0x00. Finally, we turn on receiver and transmitter in Control Register 2. Read and write functions are pretty straight-forward: you read/write the Data Register and wait until the appropriate bit in Status Register is set.</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line"><span class="comment">/*</span></div><div class="line"> * PD5 -&gt; TX</div><div class="line"> * PD6 -&gt; RX</div><div class="line"> */</div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">uart_init</span><span class="params">()</span> </span>&#123;</div><div class="line">    UART_BRR1 = <span class="number">0x0D</span>;</div><div class="line">    UART_BRR2 = <span class="number">0x00</span>;</div><div class="line">    UART_CR2 = (<span class="number">1</span> &lt;&lt; UART_TEN) | (<span class="number">1</span> &lt;&lt; UART_REN);</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">uart_write</span><span class="params">(<span class="keyword">uint8_t</span> data)</span> </span>&#123;</div><div class="line">    UART_DR = data;</div><div class="line">    <span class="keyword">while</span> (!(UART_SR &amp; (<span class="number">1</span> &lt;&lt; UART_TC)));</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="keyword">uint8_t</span> uart_read() &#123;</div><div class="line">    <span class="keyword">while</span> (!(UART_SR &amp; (<span class="number">1</span> &lt;&lt; UART_RXNE)));</div><div class="line">    <span class="keyword">return</span> UART_DR;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>Anyway, let’s move on to initialization. We’ll stick with the default 8 data bits, 1 stop bit and no parity. Since our master clock is 2MHz, for baud = 9600 we have UART_DIV = 2000000/9600 = 208 (0xD0). According to the bizarre diagram above, we end up with BRR1 = 0x0D and BRR2 = 0x00. One thing to keep in mind is that BRR2 register must be written before BRR1. Finally, we turn on receiver and transmitter in Control Register 2. Read and write functions are pretty straight-forward: you read/write the Data Register and wait until the appropriate bit in Status Register is set.</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line"><span class="comment">/*</span></div><div class="line"> * PD5 -&gt; TX</div><div class="line"> * PD6 -&gt; RX</div><div class="line"> */</div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">uart_init</span><span class="params">()</span> </span>&#123;</div><div class="line">    UART_BRR2 = <span class="number">0x00</span>;</div><div class="line">    UART_BRR1 = <span class="number">0x0D</span>;</div><div class="line">    UART_CR2 = (<span class="number">1</span> &lt;&lt; UART_TEN) | (<span class="number">1</span> &lt;&lt; UART_REN);</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">uart_write</span><span class="params">(<span class="keyword">uint8_t</span> data)</span> </span>&#123;</div><div class="line">    UART_DR = data;</div><div class="line">    <span class="keyword">while</span> (!(UART_SR &amp; (<span class="number">1</span> &lt;&lt; UART_TC)));</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="keyword">uint8_t</span> uart_read() &#123;</div><div class="line">    <span class="keyword">while</span> (!(UART_SR &amp; (<span class="number">1</span> &lt;&lt; UART_RXNE)));</div><div class="line">    <span class="keyword">return</span> UART_DR;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
 <p>Redirecting <code>stdout</code> is quite easy with SDCC.</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">putchar</span><span class="params">(<span class="keyword">int</span> c)</span> </span>&#123;</div><div class="line">    uart_write(c);</div><div class="line">    <span class="keyword">return</span> <span class="number">0</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
 <p>Now we’re all set and we can use <code>printf()</code> for debugging.</p>
@@ -127,7 +127,7 @@
 <p>A few things that should be taken into account when working with ADC:</p>
 <ul>
 <li>The order in which <code>DRL</code> and <code>DRH</code> registers are accessed depends on data alignment.</li>
-<li>ADC has no internal voltage reference. STM8S003 does not have external Vref pin, so it is tied to Vcc internally, which means that your supply voltage has to be spot-on for any serious measurements.</li>
+<li>ADC has no internal voltage reference. STM8S003 does not have an external Vref pin, so it is tied to Vcc internally, which means that your supply voltage has to be spot-on for any serious measurements.</li>
 <li>Data buffer registers have no internal locking. ST provides an assembly snippet in the datasheet for reading buffer registers.</li>
 </ul>
 <h3 id="Timers-and-interrupts"><a href="#Timers-and-interrupts" class="headerlink" title="Timers and interrupts"></a>Timers and interrupts</h3><p>You can’t get far without using timers and interrupts, which is what this last section will cover. STM8S003 has 16-bit ‘advanced control’ as well as 8-bit general-purpose timers. TIM1 is a really complicated peripheral with 32 dedicated registers, and covering it’s functionality would probably require a few extra articles. For this article, we’ll use TIM4 which is good enough for basic applications.</p>
@@ -170,7 +170,7 @@
     <link href="http://lujji.github.io/blog/installing-blackmagic-via-stlink-bootloader/"/>
     <id>http://lujji.github.io/blog/installing-blackmagic-via-stlink-bootloader/</id>
     <published>2017-02-16T00:30:54.000Z</published>
-    <updated>2017-03-01T00:15:25.159Z</updated>
+    <updated>2017-03-18T21:00:59.623Z</updated>
     
     <content type="html"><![CDATA[<p>ST-Link hardware has become a host for various debuggers, including J-Link and Versaloon (which no longer seems to be maintained). To be honest, I was so spoiled by J-Link that I never had the necessity to try different debugging hardware. Only recently I have discovered the <a href="https://github.com/blacksphere/blackmagic" target="_blank" rel="external">Black Magic Probe</a> which, according to Hackaday, is the <a href="http://hackaday.com/2016/12/02/black-magic-probe-the-best-arm-jtag-debugger" target="_blank" rel="external">best ARM JTAG debugger</a>.</p>
 <a id="more"></a>
@@ -230,7 +230,7 @@
     
       <category term="reverse-engineering" scheme="http://lujji.github.io/blog/tags/reverse-engineering/"/>
     
-      <category term="patching" scheme="http://lujji.github.io/blog/tags/patching/"/>
+      <category term="java-bytecode" scheme="http://lujji.github.io/blog/tags/java-bytecode/"/>
     
   </entry>
   
@@ -322,7 +322,7 @@
     <link href="http://lujji.github.io/blog/reverse-engineering-stlink-firmware-part2/"/>
     <id>http://lujji.github.io/blog/reverse-engineering-stlink-firmware-part2/</id>
     <published>2016-10-17T00:00:00.000Z</published>
-    <updated>2016-10-17T23:00:28.436Z</updated>
+    <updated>2017-03-18T21:01:33.915Z</updated>
     
     <content type="html"><![CDATA[<p>This is the second part of ST-Link reverse-engineering, where I cover dumping the firmware, extracting and reverse-engineering the bootloader, and finally, patching the bootloader in order to disable Level 1 protection.</p>
 <a id="more"></a>
@@ -366,6 +366,8 @@
     
       <category term="reverse-engineering" scheme="http://lujji.github.io/blog/tags/reverse-engineering/"/>
     
+      <category term="stm32" scheme="http://lujji.github.io/blog/tags/stm32/"/>
+    
   </entry>
   
   <entry>
@@ -373,7 +375,7 @@
     <link href="http://lujji.github.io/blog/reverse-engineering-stlink-firmware/"/>
     <id>http://lujji.github.io/blog/reverse-engineering-stlink-firmware/</id>
     <published>2016-10-13T01:11:48.000Z</published>
-    <updated>2016-10-16T03:27:47.236Z</updated>
+    <updated>2017-03-18T21:01:22.887Z</updated>
     
     <content type="html"><![CDATA[<p>This is the first part of ST-Link reverse-engineering, where I cover analyzing and decompiling the updater utility, decrypting and encrypting firmware binaries and running custom code on ST-Link v2/2-1 programmer.</p>
 <a id="more"></a>
@@ -431,6 +433,8 @@
       <category term="st-link" scheme="http://lujji.github.io/blog/tags/st-link/"/>
     
       <category term="reverse-engineering" scheme="http://lujji.github.io/blog/tags/reverse-engineering/"/>
+    
+      <category term="stm32" scheme="http://lujji.github.io/blog/tags/stm32/"/>
     
   </entry>
   

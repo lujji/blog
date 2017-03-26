@@ -8,7 +8,23 @@
 
     <url>
         <loc>http://lujji.github.io/blog/bare-metal-programming-stm8/</loc>
-        <lastmod>2017-03-17T00:40:38.076Z</lastmod>
+        <lastmod>2017-03-26T15:36:12.299Z</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.6</priority>
+
+    </url>
+
+    <url>
+        <loc>http://lujji.github.io/blog/reverse-engineering-stlink-firmware-part2/</loc>
+        <lastmod>2017-03-18T21:01:33.915Z</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.6</priority>
+
+    </url>
+
+    <url>
+        <loc>http://lujji.github.io/blog/reverse-engineering-stlink-firmware/</loc>
+        <lastmod>2017-03-18T21:01:22.887Z</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.6</priority>
 
@@ -16,7 +32,7 @@
 
     <url>
         <loc>http://lujji.github.io/blog/installing-blackmagic-via-stlink-bootloader/</loc>
-        <lastmod>2017-03-01T00:15:25.159Z</lastmod>
+        <lastmod>2017-03-18T21:00:59.623Z</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.6</priority>
 
@@ -25,22 +41,6 @@
     <url>
         <loc>http://lujji.github.io/blog/esp-httpd/</loc>
         <lastmod>2017-02-28T23:36:57.471Z</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.6</priority>
-
-    </url>
-
-    <url>
-        <loc>http://lujji.github.io/blog/reverse-engineering-stlink-firmware-part2/</loc>
-        <lastmod>2016-10-17T23:00:28.436Z</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.6</priority>
-
-    </url>
-
-    <url>
-        <loc>http://lujji.github.io/blog/reverse-engineering-stlink-firmware/</loc>
-        <lastmod>2016-10-16T03:27:47.236Z</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.6</priority>
 
