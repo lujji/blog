@@ -7,8 +7,16 @@
     </url>
 
     <url>
+        <loc>http://lujji.github.io/blog/bare-metal-programming-stm8-part2/</loc>
+        <lastmod>2017-04-11T02:25:46.887Z</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.6</priority>
+
+    </url>
+
+    <url>
         <loc>http://lujji.github.io/blog/bare-metal-programming-stm8/</loc>
-        <lastmod>2017-03-26T15:36:12.299Z</lastmod>
+        <lastmod>2017-03-30T23:45:41.440Z</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.6</priority>
 
