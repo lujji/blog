@@ -51,14 +51,14 @@
     </url>
 
     <url>
-        <loc>http://lujji.github.io/blog/tags/reverse-engineering/</loc>
+        <loc>http://lujji.github.io/blog/tags/st-link/</loc>
         <lastmod>2017-03-18T21:01:33.915Z</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.2</priority>
     </url>
 
     <url>
-        <loc>http://lujji.github.io/blog/tags/st-link/</loc>
+        <loc>http://lujji.github.io/blog/tags/reverse-engineering/</loc>
         <lastmod>2017-03-18T21:01:33.915Z</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.2</priority>
@@ -73,21 +73,21 @@
 
     <url>
         <loc>http://lujji.github.io/blog/tags/bare-metal/</loc>
-        <lastmod>2017-04-11T02:25:46.887Z</lastmod>
+        <lastmod>2017-04-11T18:56:05.539Z</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.2</priority>
     </url>
 
     <url>
         <loc>http://lujji.github.io/blog/tags/sdcc/</loc>
-        <lastmod>2017-04-11T02:25:46.887Z</lastmod>
+        <lastmod>2017-04-11T18:56:05.539Z</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.2</priority>
     </url>
 
     <url>
         <loc>http://lujji.github.io/blog/tags/stm8/</loc>
-        <lastmod>2017-04-11T02:25:46.887Z</lastmod>
+        <lastmod>2017-04-11T18:56:05.539Z</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.2</priority>
     </url>
