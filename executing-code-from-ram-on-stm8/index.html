@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Executing code from RAM on STM8 | lujji</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="A short article where we investigate how executing code from RAM can be achieved on STM8 with SDCC toolchain.">
+<meta name="keywords" content="sdcc,stm8,assembly">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Executing code from RAM on STM8">
+<meta property="og:url" content="http://lujji.github.io/blog/executing-code-from-ram-on-stm8/index.html">
+<meta property="og:site_name" content="lujji">
+<meta property="og:description" content="A short article where we investigate how executing code from RAM can be achieved on STM8 with SDCC toolchain.">
+<meta property="og:locale" content="en">
+<meta property="og:updated_time" content="2017-07-25T22:22:26.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Executing code from RAM on STM8">
+<meta name="twitter:description" content="A short article where we investigate how executing code from RAM can be achieved on STM8 with SDCC toolchain.">
+  
+    <link rel="alternate" href="atom.xml" title="lujji" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/blog/css/images/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  <link rel="stylesheet" href="/blog/css/style.css">
+  
+
+</head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/blog/" id="logo">lujji</a>
+      </h1>
+      
+        <h2 id="subtitle-wrap">
+          <a href="/blog/" id="subtitle">embedded stuff</a>
+        </h2>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/blog/">Home</a>
+        
+          <a class="main-nav-link" href="/blog/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+      <a id="nav-github-link" class="nav-icon" href="https://github.com/lujji" title="GitHub"></a>
+        
+          <a id="nav-rss-link" class="nav-icon" href="atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://lujji.github.io/blog"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-executing-code-from-ram-on-stm8" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/blog/executing-code-from-ram-on-stm8/" class="article-date">
+  <time datetime="2017-06-25T21:00:00.000Z" itemprop="datePublished">2017-06-26</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Executing code from RAM on STM8
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>A short article where we investigate how executing code from RAM can be achieved on STM8 with SDCC toolchain.</p>
+<a id="more"></a>
+<p>All right, I’ve been avoiding this topic for quite a while, so I wanted to deal with it first before finishing other articles. The reason for me to avoid this topic was mostly because I needed to come up with a relatively clean solution that would be worth writing about. I had an assumption that SDCC was not the right tool for the job, and some of the hacks that I came across while researching this topic only made this assumption stronger. But I’m more than glad to say that I was wrong.</p>
+<p>Overall the mechanism for copying functions into RAM is not complicated: you place your function in a separate code section, reserve some memory for this function and finally, copy the contents of this section into RAM. The hardest part is to figure out how to accomplish all that with SDCC toolchain. Let’s find out.</p>
+<p>First of all, SDCC port for STM8 supports <code>--codeseg</code> option, which can be also invoked via a pragma. In order to place a function into a specific code section we have to implement this function in a separate .c file, compile it and link with our application. For this example we’ll take a function that sends a null-terminated string over UART:<br><figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">pragma</span> codeseg RAM_SEG</span></div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">ram_uart_puts</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *str)</span> </span>&#123;</div><div class="line">    <span class="keyword">while</span> (*str) &#123;</div><div class="line">        UART1_DR = *str++;</div><div class="line">        <span class="keyword">while</span> (!(UART1_SR &amp; (<span class="number">1</span> &lt;&lt; UART1_SR_TC)));</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>After compiling the source we should be able to see <code>.area RAM_SEG</code> above <code>_ram_uart_puts</code> symbol in the output listing.</p>
+<p>Now that we have a separate section containing a single function, we need to find some way of getting the section length in order to know how many bytes to copy. For that we’ll resort to <a href="http://svn.code.sf.net/p/sdcc/code/trunk/sdcc/sdas/doc/asmlnk.txt" target="_blank" rel="external">SDCC ASxxxx Assemblers documentation</a>, which is an impressively large document, but don’t worry - we’ll only need small portions of it.</p>
+<p>‘General assembler directives’ section tells us that assembler generates two symbols for each program area (code section): <code>s_&lt;area&gt;</code>, which is the starting address of the program area and <code>l_&lt;area&gt;</code> - length of that program area. Unfortunately, you can’t access these variables directly from C. But you can access C variables from assembly, which means that retrieving code section length can be achieved with just a single line of assembly code:<br><figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">volatile</span> <span class="keyword">uint8_t</span> RAM_SEG_LEN;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">get_ram_section_length</span><span class="params">()</span> </span>&#123;</div><div class="line">    <span class="keyword">__asm__</span>(<span class="string">"mov _RAM_SEG_LEN, #l_RAM_SEG"</span>);</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>Here I’m assuming that the function is small enough to fit into 256 bytes. If that’s not the case, things become a bit more complicated:<br><figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">volatile</span> <span class="keyword">uint16_t</span> RAM_SEG_LEN;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">get_ram_section_length</span><span class="params">()</span> </span>&#123;</div><div class="line">    __asm</div><div class="line">        pushw x</div><div class="line">        ldw x, #l_RAM_SEG</div><div class="line">        ldw _RAM_SEG_LEN, x</div><div class="line">        popw x</div><div class="line">    __endasm;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>We’re using <code>ldw</code> instruction to load the section length into a 16-bit index register X, which is then copied into uint16_t variable RAM_SEG_LEN. Note that symbol names of C variables are generated with a leading underscore. Also note that the code snippet is surrounded with pushw/popw instructions - this is done to preserve the contents of register X since we don’t want our inline function to break any other code that might be using this register.</p>
+<p>Now the last remaining thing is to copy the subroutine into RAM:<br><figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">uint8_t</span> f_ram[<span class="number">128</span>];</div><div class="line"><span class="keyword">void</span> (*uart_puts)(<span class="keyword">const</span> <span class="keyword">char</span> *str);</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">ram_cpy</span><span class="params">()</span> </span>&#123;</div><div class="line">    get_ram_section_length();</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">uint8_t</span> i = <span class="number">0</span>; i &lt; RAM_SEG_LEN; i++)</div><div class="line">        f_ram[i] = ((<span class="keyword">uint8_t</span> *) ram_uart_puts)[i];</div><div class="line">    uart_puts = (<span class="keyword">void</span> (*)(<span class="keyword">const</span> <span class="keyword">char</span> *)) &amp;f_ram;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>Since there is no elegant way of getting code section length at compile-time, we simply declare an array of fixed size and make sure that it’s large enough to store our RAM functions. SDCC does not support variable-length arrays, so we can’t allocate this memory on the stack either. A nicer workaround would be to use <code>malloc()</code>, but it just feels wrong. We <em>could</em> of course reserve the exact amount of bytes in the .data section in assembly and declare f_ram as extern. But here’s a thing about assembly: once you start optimizing things, it’s really hard to stop. Quite often I come across some code which contains so much inline assembly that makes me wonder why the author bothered with C in the first place.</p>
+<p>Keep in mind that some processor instructions can use relative addressing, which might ruin your day when relocating functions, so make sure that you always check the listing. Minimizing external dependencies and keeping RAM functions compact and self-contained will definitely help preserving your sanity.</p>
+<p>That’s it for now. As always, code is on <a href="https://github.com/lujji/stm8-bare-min/tree/master/examples/RAM_EXEC" target="_blank" rel="external">github</a>.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://lujji.github.io/blog/executing-code-from-ram-on-stm8/" data-id="cj5k5idt2000as1pv3imir8mb" class="article-share-link">Share</a>
+      
+        <a href="http://lujji.github.io/blog/executing-code-from-ram-on-stm8/#disqus_thread" class="article-comment-link">Comments</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/blog/tags/assembly/">assembly</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/blog/tags/sdcc/">sdcc</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/blog/tags/stm8/">stm8</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/blog/bare-metal-programming-stm8-part2/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Bare metal programming: STM8 (Part 2)</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+<section id="comments">
+  <div id="disqus_thread">
+    <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  </div>
+</section>
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2017/06/">June 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2017/04/">April 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2017/03/">March 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2017/02/">February 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2017/01/">January 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2016/10/">October 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2016/09/">September 2016</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/blog/executing-code-from-ram-on-stm8/">Executing code from RAM on STM8</a>
+          </li>
+        
+          <li>
+            <a href="/blog/bare-metal-programming-stm8-part2/">Bare metal programming: STM8 (Part 2)</a>
+          </li>
+        
+          <li>
+            <a href="/blog/bare-metal-programming-stm8/">Bare metal programming: STM8</a>
+          </li>
+        
+          <li>
+            <a href="/blog/installing-blackmagic-via-stlink-bootloader/">Installing Black Magic via ST-Link bootloader</a>
+          </li>
+        
+          <li>
+            <a href="/blog/esp-httpd/">HTTP server with WebSockets on ESP8266</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2017 lujji<br>      
+      lujji at protonmail com
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/blog/" class="mobile-nav-link">Home</a>
+  
+    <a href="/blog/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+<script>
+  var disqus_shortname = 'lujji';
+  
+  var disqus_url = 'http://lujji.github.io/blog/executing-code-from-ram-on-stm8/';
+  
+  (function(){
+    var dsq = document.createElement('script');
+    dsq.type = 'text/javascript';
+    dsq.async = true;
+    dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/blog/fancybox/jquery.fancybox.css">
+  <script src="/blog/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/blog/js/script.js"></script>
+
+  </div>
+</body>
+</html>

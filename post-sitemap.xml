@@ -7,8 +7,8 @@
     </url>
 
     <url>
-        <loc>http://lujji.github.io/blog/bare-metal-programming-stm8-part2/</loc>
-        <lastmod>2017-04-12T04:29:23.235Z</lastmod>
+        <loc>http://lujji.github.io/blog/executing-code-from-ram-on-stm8/</loc>
+        <lastmod>2017-07-25T22:22:26.000Z</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.6</priority>
 
@@ -16,7 +16,15 @@
 
     <url>
         <loc>http://lujji.github.io/blog/bare-metal-programming-stm8/</loc>
-        <lastmod>2017-03-30T23:45:41.440Z</lastmod>
+        <lastmod>2017-07-23T23:28:34.114Z</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.6</priority>
+
+    </url>
+
+    <url>
+        <loc>http://lujji.github.io/blog/bare-metal-programming-stm8-part2/</loc>
+        <lastmod>2017-04-12T04:30:36.395Z</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.6</priority>
 

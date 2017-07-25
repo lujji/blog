@@ -5,7 +5,7 @@
   <link href="/blog/atom.xml" rel="self"/>
   
   <link href="http://lujji.github.io/blog/"/>
-  <updated>2017-04-12T04:29:23.235Z</updated>
+  <updated>2017-07-25T22:22:26.000Z</updated>
   <id>http://lujji.github.io/blog/</id>
   
   <author>
@@ -16,11 +16,49 @@
   <generator uri="http://hexo.io/">Hexo</generator>
   
   <entry>
+    <title>Executing code from RAM on STM8</title>
+    <link href="http://lujji.github.io/blog/executing-code-from-ram-on-stm8/"/>
+    <id>http://lujji.github.io/blog/executing-code-from-ram-on-stm8/</id>
+    <published>2017-06-25T21:00:00.000Z</published>
+    <updated>2017-07-25T22:22:26.000Z</updated>
+    
+    <content type="html"><![CDATA[<p>A short article where we investigate how executing code from RAM can be achieved on STM8 with SDCC toolchain.</p>
+<a id="more"></a>
+<p>All right, I’ve been avoiding this topic for quite a while, so I wanted to deal with it first before finishing other articles. The reason for me to avoid this topic was mostly because I needed to come up with a relatively clean solution that would be worth writing about. I had an assumption that SDCC was not the right tool for the job, and some of the hacks that I came across while researching this topic only made this assumption stronger. But I’m more than glad to say that I was wrong.</p>
+<p>Overall the mechanism for copying functions into RAM is not complicated: you place your function in a separate code section, reserve some memory for this function and finally, copy the contents of this section into RAM. The hardest part is to figure out how to accomplish all that with SDCC toolchain. Let’s find out.</p>
+<p>First of all, SDCC port for STM8 supports <code>--codeseg</code> option, which can be also invoked via a pragma. In order to place a function into a specific code section we have to implement this function in a separate .c file, compile it and link with our application. For this example we’ll take a function that sends a null-terminated string over UART:<br><figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">pragma</span> codeseg RAM_SEG</span></div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">ram_uart_puts</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *str)</span> </span>&#123;</div><div class="line">    <span class="keyword">while</span> (*str) &#123;</div><div class="line">        UART1_DR = *str++;</div><div class="line">        <span class="keyword">while</span> (!(UART1_SR &amp; (<span class="number">1</span> &lt;&lt; UART1_SR_TC)));</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>After compiling the source we should be able to see <code>.area RAM_SEG</code> above <code>_ram_uart_puts</code> symbol in the output listing.</p>
+<p>Now that we have a separate section containing a single function, we need to find some way of getting the section length in order to know how many bytes to copy. For that we’ll resort to <a href="http://svn.code.sf.net/p/sdcc/code/trunk/sdcc/sdas/doc/asmlnk.txt" target="_blank" rel="external">SDCC ASxxxx Assemblers documentation</a>, which is an impressively large document, but don’t worry - we’ll only need small portions of it.</p>
+<p>‘General assembler directives’ section tells us that assembler generates two symbols for each program area (code section): <code>s_&lt;area&gt;</code>, which is the starting address of the program area and <code>l_&lt;area&gt;</code> - length of that program area. Unfortunately, you can’t access these variables directly from C. But you can access C variables from assembly, which means that retrieving code section length can be achieved with just a single line of assembly code:<br><figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">volatile</span> <span class="keyword">uint8_t</span> RAM_SEG_LEN;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">get_ram_section_length</span><span class="params">()</span> </span>&#123;</div><div class="line">    <span class="keyword">__asm__</span>(<span class="string">"mov _RAM_SEG_LEN, #l_RAM_SEG"</span>);</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>Here I’m assuming that the function is small enough to fit into 256 bytes. If that’s not the case, things become a bit more complicated:<br><figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">volatile</span> <span class="keyword">uint16_t</span> RAM_SEG_LEN;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">get_ram_section_length</span><span class="params">()</span> </span>&#123;</div><div class="line">    __asm</div><div class="line">        pushw x</div><div class="line">        ldw x, #l_RAM_SEG</div><div class="line">        ldw _RAM_SEG_LEN, x</div><div class="line">        popw x</div><div class="line">    __endasm;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>We’re using <code>ldw</code> instruction to load the section length into a 16-bit index register X, which is then copied into uint16_t variable RAM_SEG_LEN. Note that symbol names of C variables are generated with a leading underscore. Also note that the code snippet is surrounded with pushw/popw instructions - this is done to preserve the contents of register X since we don’t want our inline function to break any other code that might be using this register.</p>
+<p>Now the last remaining thing is to copy the subroutine into RAM:<br><figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">uint8_t</span> f_ram[<span class="number">128</span>];</div><div class="line"><span class="keyword">void</span> (*uart_puts)(<span class="keyword">const</span> <span class="keyword">char</span> *str);</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">ram_cpy</span><span class="params">()</span> </span>&#123;</div><div class="line">    get_ram_section_length();</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">uint8_t</span> i = <span class="number">0</span>; i &lt; RAM_SEG_LEN; i++)</div><div class="line">        f_ram[i] = ((<span class="keyword">uint8_t</span> *) ram_uart_puts)[i];</div><div class="line">    uart_puts = (<span class="keyword">void</span> (*)(<span class="keyword">const</span> <span class="keyword">char</span> *)) &amp;f_ram;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>Since there is no elegant way of getting code section length at compile-time, we simply declare an array of fixed size and make sure that it’s large enough to store our RAM functions. SDCC does not support variable-length arrays, so we can’t allocate this memory on the stack either. A nicer workaround would be to use <code>malloc()</code>, but it just feels wrong. We <em>could</em> of course reserve the exact amount of bytes in the .data section in assembly and declare f_ram as extern. But here’s a thing about assembly: once you start optimizing things, it’s really hard to stop. Quite often I come across some code which contains so much inline assembly that makes me wonder why the author bothered with C in the first place.</p>
+<p>Keep in mind that some processor instructions can use relative addressing, which might ruin your day when relocating functions, so make sure that you always check the listing. Minimizing external dependencies and keeping RAM functions compact and self-contained will definitely help preserving your sanity.</p>
+<p>That’s it for now. As always, code is on <a href="https://github.com/lujji/stm8-bare-min/tree/master/examples/RAM_EXEC" target="_blank" rel="external">github</a>.</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;A short article where we investigate how executing code from RAM can be achieved on STM8 with SDCC toolchain.&lt;/p&gt;
+    
+    </summary>
+    
+    
+      <category term="sdcc" scheme="http://lujji.github.io/blog/tags/sdcc/"/>
+    
+      <category term="stm8" scheme="http://lujji.github.io/blog/tags/stm8/"/>
+    
+      <category term="assembly" scheme="http://lujji.github.io/blog/tags/assembly/"/>
+    
+  </entry>
+  
+  <entry>
     <title>Bare metal programming: STM8 (Part 2)</title>
     <link href="http://lujji.github.io/blog/bare-metal-programming-stm8-part2/"/>
     <id>http://lujji.github.io/blog/bare-metal-programming-stm8-part2/</id>
-    <published>2017-04-11T00:00:00.000Z</published>
-    <updated>2017-04-12T04:29:23.235Z</updated>
+    <published>2017-04-10T21:00:00.000Z</published>
+    <updated>2017-04-12T04:30:36.395Z</updated>
     
     <content type="html"><![CDATA[<p>In this part we are going to focus on more features of STM8 (clock, EEPROM, option bytes, flash access) and stick some wires into the mains outlet.</p>
 <a id="more"></a>
@@ -116,8 +154,8 @@
     <title>Bare metal programming: STM8</title>
     <link href="http://lujji.github.io/blog/bare-metal-programming-stm8/"/>
     <id>http://lujji.github.io/blog/bare-metal-programming-stm8/</id>
-    <published>2017-03-04T00:00:00.000Z</published>
-    <updated>2017-03-30T23:45:41.440Z</updated>
+    <published>2017-03-03T21:00:00.000Z</published>
+    <updated>2017-07-23T23:28:34.114Z</updated>
     
     <content type="html"><![CDATA[<p>This article will cover developing for STM8 series of microcontrolles completely from scratch, without using any vendor-supplied libraries.</p>
 <a id="more"></a>
@@ -151,7 +189,7 @@
 <figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line"><span class="comment">/* Port access operation */</span></div><div class="line">PORTB = (<span class="number">1</span> &lt;&lt; PB2);</div><div class="line"></div><div class="line"><span class="comment">/* Expanding macros (same as above) */</span></div><div class="line">(* (<span class="keyword">volatile</span> <span class="keyword">uint8_t</span> *) ((<span class="number">0x05</span>) + <span class="number">0x20</span>)) = (<span class="number">1</span> &lt;&lt; <span class="number">2</span>);</div><div class="line"></div><div class="line"><span class="comment">/* Same as above */</span></div><div class="line">* (<span class="keyword">volatile</span> <span class="keyword">uint8_t</span> *) <span class="number">0x25</span> = <span class="number">0x04</span>;</div></pre></td></tr></table></figure>
 <p>Typecasting integer to a pointer is a valid operation in C. If you don’t quite understand what is going on with pointer arithmetics then here’s another example for you:</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">uint8_t</span> a = <span class="number">0xDE</span>;  <span class="comment">// a contains 0xDE</span></div><div class="line"><span class="keyword">uint8_t</span> *ptr = &amp;a; <span class="comment">// ptr points to a</span></div><div class="line">*ptr = <span class="number">0xAD</span>; <span class="comment">// a contains 0xAD</span></div></pre></td></tr></table></figure>
-<p>The only difference is that in the first example we know exactly which address in memory we are going to use. It’s important that you understand what’s going on here, since we’re going to use this mechanism for defining registers later on.</p>
+<p>The only difference is that in the first example we know exactly which address in memory we are going to use. It’s important that you understand what’s going on here, since we’re going to use this mechanism for accessing hardware registers later on.</p>
 <h2 id="First-program"><a href="#First-program" class="headerlink" title="First program"></a>First program</h2><p>These are the two most important documents: <a href="st.com/resource/en/datasheet/stm8s003k3.pdf">datasheet</a> and <a href="www.st.com/resource/en/reference_manual/CD00190271.pdf">reference manual</a>. We’ll use the datasheet for the pinout and register map. Everything else is present in the reference manual: peripheral operation, register description, etc. Let’s begin by opening the GPIO section of the reference manual and taking a closer look at PORTD registers.</p>
 <img src="/blog/bare-metal-programming-stm8/portd_registers.png" alt="PORTD registers" title="PORTD registers">
 <p>These registers are pretty much self-explanatory but just in case, here’s a brief overview: <code>DDR</code> is the direction register, which configures a pin as either an input or an output. After we configured <code>DDR</code> we can use <code>ODR</code> for writing or <code>IDR</code> for reading pin state. Control registers <code>CR1</code> and <code>CR2</code> are used for configuring internal pull-ups, output speed and selecting between push-pull or pseudo open-drain.</p>
@@ -172,7 +210,7 @@
 <p>So.. you get a 16-bit value and you write the first nibble [15:12] into BRR2[7:4], then you write bits [11:4] into BRR1 and finally you write the remaining bits [3:0] into BRR2[3:0]. Seriously, what were they thinking? Why couldn’t ST just implement BRR_HIGH and BRR_LOW for the sake of it? All this bit-fiddling just seems unnecessarily complicated.</p>
 <p>Anyway, let’s move on to initialization. We’ll stick with the default 8 data bits, 1 stop bit and no parity. Since our master clock is 2MHz, for baud = 9600 we have UART_DIV = 2000000/9600 = 208 (0xD0). According to the bizarre diagram above, we end up with BRR1 = 0x0D and BRR2 = 0x00. One thing to keep in mind is that BRR2 register must be written before BRR1. Finally, we turn on receiver and transmitter in Control Register 2. Read and write functions are pretty straight-forward: you read/write the Data Register and wait until the appropriate bit in Status Register is set.</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line"><span class="comment">/*</span></div><div class="line"> * PD5 -&gt; TX</div><div class="line"> * PD6 -&gt; RX</div><div class="line"> */</div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">uart_init</span><span class="params">()</span> </span>&#123;</div><div class="line">    UART_BRR2 = <span class="number">0x00</span>;</div><div class="line">    UART_BRR1 = <span class="number">0x0D</span>;</div><div class="line">    UART_CR2 = (<span class="number">1</span> &lt;&lt; UART_TEN) | (<span class="number">1</span> &lt;&lt; UART_REN);</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">uart_write</span><span class="params">(<span class="keyword">uint8_t</span> data)</span> </span>&#123;</div><div class="line">    UART_DR = data;</div><div class="line">    <span class="keyword">while</span> (!(UART_SR &amp; (<span class="number">1</span> &lt;&lt; UART_TC)));</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="keyword">uint8_t</span> uart_read() &#123;</div><div class="line">    <span class="keyword">while</span> (!(UART_SR &amp; (<span class="number">1</span> &lt;&lt; UART_RXNE)));</div><div class="line">    <span class="keyword">return</span> UART_DR;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<p>Redirecting <code>stdout</code> is quite easy with SDCC.</p>
+<p>Redirecting <code>stdout</code> is easy with SDCC.</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">putchar</span><span class="params">(<span class="keyword">int</span> c)</span> </span>&#123;</div><div class="line">    uart_write(c);</div><div class="line">    <span class="keyword">return</span> <span class="number">0</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
 <p>Now we’re all set and we can use <code>printf()</code> for debugging.</p>
 <h3 id="SPI"><a href="#SPI" class="headerlink" title="SPI"></a>SPI</h3><p>Next, we implement SPI master. SPI is quite an easy peripheral and is usually implemented as a simple shift-register in hardware. We need to define only 4 registers to start working with SPI.</p>
@@ -266,7 +304,7 @@
     <title>Installing Black Magic via ST-Link bootloader</title>
     <link href="http://lujji.github.io/blog/installing-blackmagic-via-stlink-bootloader/"/>
     <id>http://lujji.github.io/blog/installing-blackmagic-via-stlink-bootloader/</id>
-    <published>2017-02-16T00:30:54.000Z</published>
+    <published>2017-02-15T21:30:54.000Z</published>
     <updated>2017-03-18T21:00:59.623Z</updated>
     
     <content type="html"><![CDATA[<p>ST-Link hardware has become a host for various debuggers, including J-Link and Versaloon (which no longer seems to be maintained). To be honest, I was so spoiled by J-Link that I never had the necessity to try different debugging hardware. Only recently I have discovered the <a href="https://github.com/blacksphere/blackmagic" target="_blank" rel="external">Black Magic Probe</a> which, according to Hackaday, is the <a href="http://hackaday.com/2016/12/02/black-magic-probe-the-best-arm-jtag-debugger" target="_blank" rel="external">best ARM JTAG debugger</a>.</p>
@@ -316,7 +354,7 @@
     
     <summary type="html">
     
-      &lt;p&gt;ST-Link hardware has become a host for various debuggers, including J-Link and Versaloon (which no longer seems to be maintained). To be honest, I was so spoiled by J-Link that I never had the necessity to try different debugging hardware. Only recently I have discovered the &lt;a href=&quot;https://github.com/blacksphere/blackmagic&quot;&gt;Black Magic Probe&lt;/a&gt; which, according to Hackaday, is the &lt;a href=&quot;http://hackaday.com/2016/12/02/black-magic-probe-the-best-arm-jtag-debugger&quot;&gt;best ARM JTAG debugger&lt;/a&gt;.&lt;/p&gt;
+      &lt;p&gt;ST-Link hardware has become a host for various debuggers, including J-Link and Versaloon (which no longer seems to be maintained). To be honest, I was so spoiled by J-Link that I never had the necessity to try different debugging hardware. Only recently I have discovered the &lt;a href=&quot;https://github.com/blacksphere/blackmagic&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;Black Magic Probe&lt;/a&gt; which, according to Hackaday, is the &lt;a href=&quot;http://hackaday.com/2016/12/02/black-magic-probe-the-best-arm-jtag-debugger&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;best ARM JTAG debugger&lt;/a&gt;.&lt;/p&gt;
     
     </summary>
     
@@ -335,7 +373,7 @@
     <title>HTTP server with WebSockets on ESP8266</title>
     <link href="http://lujji.github.io/blog/esp-httpd/"/>
     <id>http://lujji.github.io/blog/esp-httpd/</id>
-    <published>2017-01-30T20:11:00.000Z</published>
+    <published>2017-01-30T17:11:00.000Z</published>
     <updated>2017-02-28T23:36:57.471Z</updated>
     
     <content type="html"><![CDATA[<p>This article will cover implementing a basic HTTP server on top of LwIP for ESP8266 and dive into the implementation of WebSockets.</p>
@@ -418,7 +456,7 @@
     <title>Reverse-engineering ST-Link firmware - Part 2</title>
     <link href="http://lujji.github.io/blog/reverse-engineering-stlink-firmware-part2/"/>
     <id>http://lujji.github.io/blog/reverse-engineering-stlink-firmware-part2/</id>
-    <published>2016-10-17T00:00:00.000Z</published>
+    <published>2016-10-16T21:00:00.000Z</published>
     <updated>2017-03-18T21:01:33.915Z</updated>
     
     <content type="html"><![CDATA[<p>This is the second part of ST-Link reverse-engineering, where I cover dumping the firmware, extracting and reverse-engineering the bootloader, and finally, patching the bootloader in order to disable Level 1 protection.</p>
@@ -471,7 +509,7 @@
     <title>Reverse-engineering ST-Link firmware</title>
     <link href="http://lujji.github.io/blog/reverse-engineering-stlink-firmware/"/>
     <id>http://lujji.github.io/blog/reverse-engineering-stlink-firmware/</id>
-    <published>2016-10-13T01:11:48.000Z</published>
+    <published>2016-10-12T22:11:48.000Z</published>
     <updated>2017-03-18T21:01:22.887Z</updated>
     
     <content type="html"><![CDATA[<p>This is the first part of ST-Link reverse-engineering, where I cover analyzing and decompiling the updater utility, decrypting and encrypting firmware binaries and running custom code on ST-Link v2/2-1 programmer.</p>
@@ -539,7 +577,7 @@
     <title>Adding Trace support to ST-Link clones</title>
     <link href="http://lujji.github.io/blog/stlink-clone-trace/"/>
     <id>http://lujji.github.io/blog/stlink-clone-trace/</id>
-    <published>2016-09-10T20:54:00.000Z</published>
+    <published>2016-09-10T17:54:00.000Z</published>
     <updated>2016-10-13T01:56:37.352Z</updated>
     
     <content type="html"><![CDATA[<p>When it comes to programming ST microcontrollers, I prefer to use Discovery boards (mainly because you can <a href="https://www.segger.com/jlink-st-link.html" target="_blank" rel="external">turn them into J-Link</a>). However, I got tired of carrying around the whole dev-board just for the programmer, so I ordered a cheap st-link clone due to it’s small form-factor.<br><a id="more"></a></p>
@@ -556,7 +594,7 @@
     
     <summary type="html">
     
-      &lt;p&gt;When it comes to programming ST microcontrollers, I prefer to use Discovery boards (mainly because you can &lt;a href=&quot;https://www.segger.com/jlink-st-link.html&quot;&gt;turn them into J-Link&lt;/a&gt;). However, I got tired of carrying around the whole dev-board just for the programmer, so I ordered a cheap st-link clone due to it’s small form-factor.&lt;br&gt;
+      &lt;p&gt;When it comes to programming ST microcontrollers, I prefer to use Discovery boards (mainly because you can &lt;a href=&quot;https://www.segger.com/jlink-st-link.html&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;turn them into J-Link&lt;/a&gt;). However, I got tired of carrying around the whole dev-board just for the programmer, so I ordered a cheap st-link clone due to it’s small form-factor.&lt;br&gt;
     
     </summary>
     
