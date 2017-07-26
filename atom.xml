@@ -5,7 +5,7 @@
   <link href="/blog/atom.xml" rel="self"/>
   
   <link href="http://lujji.github.io/blog/"/>
-  <updated>2017-07-25T22:22:26.000Z</updated>
+  <updated>2017-07-26T11:58:00.064Z</updated>
   <id>http://lujji.github.io/blog/</id>
   
   <author>
@@ -20,7 +20,7 @@
     <link href="http://lujji.github.io/blog/executing-code-from-ram-on-stm8/"/>
     <id>http://lujji.github.io/blog/executing-code-from-ram-on-stm8/</id>
     <published>2017-06-25T21:00:00.000Z</published>
-    <updated>2017-07-25T22:22:26.000Z</updated>
+    <updated>2017-07-26T11:58:00.064Z</updated>
     
     <content type="html"><![CDATA[<p>A short article where we investigate how executing code from RAM can be achieved on STM8 with SDCC toolchain.</p>
 <a id="more"></a>
@@ -34,7 +34,7 @@
 <p>We’re using <code>ldw</code> instruction to load the section length into a 16-bit index register X, which is then copied into uint16_t variable RAM_SEG_LEN. Note that symbol names of C variables are generated with a leading underscore. Also note that the code snippet is surrounded with pushw/popw instructions - this is done to preserve the contents of register X since we don’t want our inline function to break any other code that might be using this register.</p>
 <p>Now the last remaining thing is to copy the subroutine into RAM:<br><figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">uint8_t</span> f_ram[<span class="number">128</span>];</div><div class="line"><span class="keyword">void</span> (*uart_puts)(<span class="keyword">const</span> <span class="keyword">char</span> *str);</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">ram_cpy</span><span class="params">()</span> </span>&#123;</div><div class="line">    get_ram_section_length();</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">uint8_t</span> i = <span class="number">0</span>; i &lt; RAM_SEG_LEN; i++)</div><div class="line">        f_ram[i] = ((<span class="keyword">uint8_t</span> *) ram_uart_puts)[i];</div><div class="line">    uart_puts = (<span class="keyword">void</span> (*)(<span class="keyword">const</span> <span class="keyword">char</span> *)) &amp;f_ram;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
 <p>Since there is no elegant way of getting code section length at compile-time, we simply declare an array of fixed size and make sure that it’s large enough to store our RAM functions. SDCC does not support variable-length arrays, so we can’t allocate this memory on the stack either. A nicer workaround would be to use <code>malloc()</code>, but it just feels wrong. We <em>could</em> of course reserve the exact amount of bytes in the .data section in assembly and declare f_ram as extern. But here’s a thing about assembly: once you start optimizing things, it’s really hard to stop. Quite often I come across some code which contains so much inline assembly that makes me wonder why the author bothered with C in the first place.</p>
-<p>Keep in mind that some processor instructions can use relative addressing, which might ruin your day when relocating functions, so make sure that you always check the listing. Minimizing external dependencies and keeping RAM functions compact and self-contained will definitely help preserving your sanity.</p>
+<p>Keep in mind that some processor instructions can use both absolute and relative addressing, which might ruin your day when relocating functions with external dependencies, so make sure that you always check the listing. The general rule is: addressing within the function itself must be relative and accessing external symbols must be done via an absolute address. Minimizing external dependencies and keeping RAM functions compact and self-contained will definitely help preserving your sanity.</p>
 <p>That’s it for now. As always, code is on <a href="https://github.com/lujji/stm8-bare-min/tree/master/examples/RAM_EXEC" target="_blank" rel="external">github</a>.</p>
 ]]></content>
     
