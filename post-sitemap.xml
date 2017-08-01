@@ -7,6 +7,22 @@
     </url>
 
     <url>
+        <loc>http://lujji.github.io/blog/mixing-c-and-assembly-on-stm8/</loc>
+        <lastmod>2017-07-31T21:59:49.482Z</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.6</priority>
+
+    </url>
+
+    <url>
+        <loc>http://lujji.github.io/blog/bare-metal-programming-stm8-part2/</loc>
+        <lastmod>2017-07-30T00:51:06.908Z</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.6</priority>
+
+    </url>
+
+    <url>
         <loc>http://lujji.github.io/blog/executing-code-from-ram-on-stm8/</loc>
         <lastmod>2017-07-26T20:44:57.288Z</lastmod>
         <changefreq>weekly</changefreq>
@@ -17,14 +33,6 @@
     <url>
         <loc>http://lujji.github.io/blog/bare-metal-programming-stm8/</loc>
         <lastmod>2017-07-23T23:28:34.114Z</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.6</priority>
-
-    </url>
-
-    <url>
-        <loc>http://lujji.github.io/blog/bare-metal-programming-stm8-part2/</loc>
-        <lastmod>2017-04-12T04:30:36.395Z</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.6</priority>
 
