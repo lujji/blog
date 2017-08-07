@@ -6,7 +6,7 @@
   <title>Mixing C and assembly on STM8 | lujji</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="description" content="This guide discusses how we should (and should not) speed up our code with inline assembly and explains how to write separate assembly routines that can be used within C.">
-<meta name="keywords" content="assembly,sdcc,stm8">
+<meta name="keywords" content="sdcc,stm8,assembly">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Mixing C and assembly on STM8">
 <meta property="og:url" content="http://lujji.github.io/blog/mixing-c-and-assembly-on-stm8/index.html">
@@ -14,7 +14,7 @@
 <meta property="og:description" content="This guide discusses how we should (and should not) speed up our code with inline assembly and explains how to write separate assembly routines that can be used within C.">
 <meta property="og:locale" content="en">
 <meta property="og:image" content="http://lujji.github.io/blog/mixing-c-and-assembly-on-stm8/cpu_registers.png">
-<meta property="og:updated_time" content="2017-07-31T21:59:49.482Z">
+<meta property="og:updated_time" content="2017-08-03T17:42:15.483Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Mixing C and assembly on STM8">
 <meta name="twitter:description" content="This guide discusses how we should (and should not) speed up our code with inline assembly and explains how to write separate assembly routines that can be used within C.">
@@ -113,7 +113,7 @@
 <h2 id="Accessing-C-symbols-from-assembly"><a href="#Accessing-C-symbols-from-assembly" class="headerlink" title="Accessing C symbols from assembly"></a>Accessing C symbols from assembly</h2><p>SDCC generates symbol names for C variables with an underscore - knowing that makes it possible to access these variables from assembly. Let’s write a small function that increments a 16-bit variable <code>val</code>:</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">volatile</span> <span class="keyword">uint16_t</span> val = <span class="number">0</span>;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">inc_val</span><span class="params">()</span> </span>&#123;</div><div class="line">    __asm</div><div class="line">        ldw x, _val</div><div class="line">        incw x</div><div class="line">        ldw _val, x</div><div class="line">    __endasm;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
 <p>There’s a slight issue with this function, though: we’re modifying a commonly used register X, which means that if some value was loaded before calling the function, it will be lost. The compiler does not know about this - it just places assembly instructions where we told it to. The proper way is to save the contents of the registers before altering them and restore them afterwards.</p>
-<p>That being said, in our case saving registers is not really necessary. There are two calling conventions for assembly functions: caller saves and callee saves. The first one means that functions are allowed to modify registers as they please and function caller is responsible for saving and restoring context. The second one means that any register modified by the function must be restored by the function itself when the function returns.</p>
+<p>That being said, in our case saving registers is not really necessary. There are two calling conventions for assembly functions: caller saves and callee saves. The first one means that functions are allowed to modify registers as they please and function caller is responsible for saving and restoring context. The second one means that any register modified by the function must be restored by the function itself when the it returns.</p>
 <p>According to the <a href="http://sdcc.sourceforge.net/doc/sdccman.pdf" target="_blank" rel="external">documentation</a>, SDCC uses caller saves convention by default, which means that we can implement our functions without saving the context. But I would still prefer doing it the ‘right way’, since this would allow inlining the function without any consequences:</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">inc_val</span><span class="params">()</span> </span>&#123;</div><div class="line">    __asm</div><div class="line">        pushw x</div><div class="line">        ldw x, _val</div><div class="line">        incw x</div><div class="line">        ldw _val, x</div><div class="line">        popw x</div><div class="line">    __endasm;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
 <h2 id="Separate-assembly-functions"><a href="#Separate-assembly-functions" class="headerlink" title="Separate assembly functions"></a>Separate assembly functions</h2><p>OK, but what if we wanted to build our own function with <del>blackjack</del> parameters and return value? Well, for the return value SDCC seems to follow this convention: accumulator is used for storing 8-bit return value, index register X for 16-bit values, and both X and Y are used if we need to return a 32-bit value. Things are a bit more complicated with function parameters, so it’s better to explain this with an example. Let’s implement a fast <code>memcpy</code> that would copy up to 255 bytes. First we declare a prototype with external linkage:</p>
@@ -130,7 +130,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://lujji.github.io/blog/mixing-c-and-assembly-on-stm8/" data-id="cj5sp7eb5000asopvojbrs816" class="article-share-link">Share</a>
+      <a data-url="http://lujji.github.io/blog/mixing-c-and-assembly-on-stm8/" data-id="cj62qqfac0008sfpvar8e3x4f" class="article-share-link">Share</a>
       
         <a href="http://lujji.github.io/blog/mixing-c-and-assembly-on-stm8/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -142,6 +142,15 @@
   
     
 <nav id="article-nav">
+  
+    <a href="/blog/serial-bootloader-for-stm8/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer Posts</strong>
+      <div class="article-nav-title">
+        
+          Serial bootloader for STM8
+        
+      </div>
+    </a>
   
   
     <a href="/blog/executing-code-from-ram-on-stm8/" id="article-nav-older" class="article-nav-link-wrap">
@@ -184,6 +193,10 @@
       <ul>
         
           <li>
+            <a href="/blog/serial-bootloader-for-stm8/">Serial bootloader for STM8</a>
+          </li>
+        
+          <li>
             <a href="/blog/mixing-c-and-assembly-on-stm8/">Mixing C and assembly on STM8</a>
           </li>
         
@@ -197,10 +210,6 @@
         
           <li>
             <a href="/blog/bare-metal-programming-stm8/">Bare metal programming: STM8</a>
-          </li>
-        
-          <li>
-            <a href="/blog/installing-blackmagic-via-stlink-bootloader/">Installing Black Magic via ST-Link bootloader</a>
           </li>
         
       </ul>

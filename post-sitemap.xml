@@ -7,8 +7,16 @@
     </url>
 
     <url>
+        <loc>http://lujji.github.io/blog/serial-bootloader-for-stm8/</loc>
+        <lastmod>2017-08-07T22:39:40.002Z</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.6</priority>
+
+    </url>
+
+    <url>
         <loc>http://lujji.github.io/blog/mixing-c-and-assembly-on-stm8/</loc>
-        <lastmod>2017-07-31T21:59:49.482Z</lastmod>
+        <lastmod>2017-08-03T17:42:15.483Z</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.6</priority>
 

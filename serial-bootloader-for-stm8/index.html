@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Serial bootloader for STM8 | lujji</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="This article will cover developing a serial bootloader for STM8S microcontrollers.">
+<meta name="keywords" content="sdcc,stm8,bootloader,tutorial">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Serial bootloader for STM8">
+<meta property="og:url" content="http://lujji.github.io/blog/serial-bootloader-for-stm8/index.html">
+<meta property="og:site_name" content="lujji">
+<meta property="og:description" content="This article will cover developing a serial bootloader for STM8S microcontrollers.">
+<meta property="og:locale" content="en">
+<meta property="og:image" content="http://lujji.github.io/blog/serial-bootloader-for-stm8/serial_protocol.png">
+<meta property="og:updated_time" content="2017-08-07T22:39:40.002Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Serial bootloader for STM8">
+<meta name="twitter:description" content="This article will cover developing a serial bootloader for STM8S microcontrollers.">
+<meta name="twitter:image" content="http://lujji.github.io/blog/serial-bootloader-for-stm8/serial_protocol.png">
+  
+    <link rel="alternate" href="atom.xml" title="lujji" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/blog/css/images/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  <link rel="stylesheet" href="/blog/css/style.css">
+  
+
+</head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/blog/" id="logo">lujji</a>
+      </h1>
+      
+        <h2 id="subtitle-wrap">
+          <a href="/blog/" id="subtitle">embedded stuff</a>
+        </h2>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/blog/">Home</a>
+        
+          <a class="main-nav-link" href="/blog/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+      <a id="nav-github-link" class="nav-icon" href="https://github.com/lujji" title="GitHub"></a>
+        
+          <a id="nav-rss-link" class="nav-icon" href="atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://lujji.github.io/blog"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-serial-bootloader-for-stm8" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/blog/serial-bootloader-for-stm8/" class="article-date">
+  <time datetime="2017-08-07T21:00:00.000Z" itemprop="datePublished">2017-08-08</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Serial bootloader for STM8
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>This article will cover developing a serial bootloader for STM8S microcontrollers.</p>
+<a id="more"></a>
+<h2 id="Contents"><a href="#Contents" class="headerlink" title="Contents:"></a>Contents:</h2><ul>
+<li><a href="#Entry-condition">Entry condition</a></li>
+<li><a href="#Serial-protocol">Serial protocol</a></li>
+<li><a href="#Flash-block-programming">Flash block programming</a></li>
+<li><a href="#Interrupt-vector-table-relocation">Interrupt vector table relocation</a></li>
+<li><a href="#Squeezing-the-last-bytes">Squeezing the last bytes</a></li>
+<li><a href="#Benchmarking">Benchmarking</a></li>
+</ul>
+<h2 id="Entry-condition"><a href="#Entry-condition" class="headerlink" title="Entry condition"></a>Entry condition</h2><p>Bootloader code gets executed first, so we need some mechanism to decide whether we want to update the firmware or execute main application. These are the most common approaches:</p>
+<ul>
+<li><strong>Configuration byte</strong>: an indicator flag, which is written by the application when firmware update is requested and cleared by the bootloader once firmware update is performed</li>
+<li><strong>Timeout</strong>: the bootloader waits for some external event during start-up. When specified timeout is reached, main application is executed</li>
+<li><strong>External jumper</strong>: external switch or jumper which selects between bootloader and application mode</li>
+</ul>
+<p>We’ll go with the third option, since it’s the easiest one to implement in my opinion. We also need to define where the main application will reside. Let’s be generous at first and dedicate 1k of flash to the bootloader, although we’ll cut the size down eventually. Since flash memory is mapped to address 0x8000, the destination address for the application will be 0x8400.</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</div><div class="line">    BOOT_PIN_CR1 = <span class="number">1</span> &lt;&lt; BOOT_PIN;</div><div class="line">    <span class="keyword">if</span> (!(BOOT_PIN_IDR &amp; (<span class="number">1</span> &lt;&lt; BOOT_PIN))) &#123;</div><div class="line">        <span class="comment">/* execute bootloader */</span></div><div class="line">        <span class="comment">// ...</span></div><div class="line">    &#125; <span class="keyword">else</span> &#123;</div><div class="line">        <span class="comment">/* jump to application */</span></div><div class="line">        BOOT_PIN_CR1 = <span class="number">0x00</span>;</div><div class="line">        <span class="keyword">__asm__</span>(<span class="string">"jp 0x8400"</span>);</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>Our main application has to be compiled with <code>--code-loc 0x8400</code> option, which instructs SDCC where code should be placed.</p>
+<h2 id="Serial-protocol"><a href="#Serial-protocol" class="headerlink" title="Serial protocol"></a>Serial protocol</h2><p>The firmware update will be initiated by sending the bootloader a preamble of 4 bytes. Preamble detection will look like this:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">bootloader_enter</span><span class="params">()</span> </span>&#123;</div><div class="line">    <span class="keyword">uint8_t</span> rx;</div><div class="line">    <span class="keyword">for</span> (;;) &#123;</div><div class="line">        rx = uart_read();</div><div class="line">        <span class="keyword">if</span> (rx != <span class="number">0xDE</span>) <span class="keyword">continue</span>;</div><div class="line">        rx = uart_read();</div><div class="line">        <span class="keyword">if</span> (rx != <span class="number">0xAD</span>) <span class="keyword">continue</span>;</div><div class="line">        rx = uart_read();</div><div class="line">        <span class="keyword">if</span> (rx != <span class="number">0xBE</span>) <span class="keyword">continue</span>;</div><div class="line">        rx = uart_read();</div><div class="line">        <span class="keyword">if</span> (rx != <span class="number">0xEF</span>) <span class="keyword">continue</span>;</div><div class="line">        <span class="keyword">return</span>;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>Once preamble is detected, the bootloader reads next 3 bytes: number of data blocks to be sent and two CRC-8 bytes which are duplicated to avoid transmission errors.</p>
+<p>After that, we follow a simple request-response protocol: the host waits for an acknowledgment and then sends a fixed size chunk of data. Bootloader receives the chunk, writes flash memory block and sends ACK again to indicate that it’s ready for another packet. When all data chunks have been sent, the bootloader verifies CRC and sends another ACK if CRC matches or NACK if it doesn’t match. If the last chunk is smaller than defined block size, the remaining bytes are padded with 0xFF by the host.</p>
+<img src="/blog/serial-bootloader-for-stm8/serial_protocol.png" alt="Communication protocol" title="Communication protocol">
+<p>Main bootloader code will look like this:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">define</span> BLOCK_SIZE      64</span></div><div class="line"><span class="meta">#<span class="meta-keyword">define</span> BOOT_ADDR       0x8400</span></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">bootloader_exec</span><span class="params">()</span> </span>&#123;</div><div class="line">    <span class="keyword">uint16_t</span> addr = BOOT_ADDR;</div><div class="line">    <span class="keyword">uint8_t</span> chunks, crc_rx;</div><div class="line"></div><div class="line">    bootloader_enter();</div><div class="line">    chunks = uart_read();</div><div class="line">    crc_rx = uart_read();</div><div class="line">    <span class="keyword">if</span> (crc_rx != uart_read())</div><div class="line">        <span class="keyword">return</span>;</div><div class="line"></div><div class="line">    <span class="comment">/* get main firmware */</span></div><div class="line">    <span class="keyword">for</span> (<span class="keyword">uint8_t</span> i = <span class="number">0</span>; i &lt; chunks; i++) &#123;</div><div class="line">        serial_read_block(rx_buffer);</div><div class="line">        flash_write_block(addr, rx_buffer);</div><div class="line">        addr += BLOCK_SIZE;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="comment">/* verify CRC */</span></div><div class="line">    <span class="keyword">if</span> (CRC != crc_rx) &#123;</div><div class="line">        serial_send_nack();</div><div class="line">        <span class="keyword">return</span>;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    serial_send_ack();</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>The microcontroller that I’m using is a low-density STM8S003F3 so the block size will be equal to 64 bytes. For medium and high density devices the block size is 128 bytes.</p>
+<p>In one of the previous <a href="https://lujji.github.io/blog/bare-metal-programming-stm8-part2/#Flash">articles</a> I mentioned that we can write flash one byte at a time, however on the hardware level one word (4 bytes) will be overwritten. Flash controller simplifies it for us by reading, modifying, erasing and writing a word each time a byte write is requested. We’ll try to speed things up a little by writing 4 bytes at a time, which can be achieved by enabling <code>WPRG</code> bit in Flash Control Register 2. This bit is reset after programming is done so it has to be manually re-enabled before each write operation.</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">flash_write_block</span><span class="params">(<span class="keyword">uint16_t</span> addr, <span class="keyword">const</span> <span class="keyword">uint8_t</span> *buf)</span> </span>&#123;</div><div class="line">    <span class="keyword">const</span> <span class="keyword">uint8_t</span> *end = buf + BLOCK_SIZE;</div><div class="line">    <span class="keyword">uint8_t</span> *mem = (<span class="keyword">uint8_t</span> *) addr;</div><div class="line"></div><div class="line">    <span class="comment">/* unlock flash */</span></div><div class="line">    FLASH_PUKR = FLASH_PUKR_KEY1;</div><div class="line">    FLASH_PUKR = FLASH_PUKR_KEY2;</div><div class="line">    <span class="keyword">while</span> (!(FLASH_IAPSR &amp; (<span class="number">1</span> &lt;&lt; FLASH_IAPSR_PUL)));</div><div class="line"></div><div class="line">    <span class="keyword">for</span> (<span class="keyword">uint8_t</span> i = <span class="number">0</span>; i &lt; BLOCK_SIZE; i += <span class="number">4</span>) &#123;</div><div class="line">        <span class="comment">/* enable word programming */</span></div><div class="line">        FLASH_CR2 = <span class="number">1</span> &lt;&lt; FLASH_CR2_WPRG;</div><div class="line">        FLASH_NCR2 = ~(<span class="number">1</span> &lt;&lt; FLASH_NCR2_NWPRG);</div><div class="line">        *mem++ = *buf++;</div><div class="line">        *mem++ = *buf++;</div><div class="line">        *mem++ = *buf++;</div><div class="line">        *mem++ = *buf++;</div><div class="line">        <span class="keyword">while</span> (!(FLASH_IAPSR &amp; (<span class="number">1</span> &lt;&lt; FLASH_IAPSR_EOP)));</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="comment">/* lock flash */</span></div><div class="line">    FLASH_IAPSR &amp;= ~(<span class="number">1</span> &lt;&lt; FLASH_IAPSR_PUL);</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>There’s one problem with this code though - it’s incredibly slow. I was hoping we could get away with word programming, but clearly this is not the case.</p>
+<h2 id="Flash-block-programming"><a href="#Flash-block-programming" class="headerlink" title="Flash block programming"></a>Flash block programming</h2><p>The most efficient way of programming flash is the block programming method. The only downside is that the processor will no longer be able to fetch instructions from flash during programming, so we’ll have to execute our code from RAM. I’ve already covered <a href="https://lujji.github.io/blog/executing-code-from-ram-on-stm8/">executing code from RAM</a> before, so I won’t go into much detail here.</p>
+<p>Let’s re-implement our flash programming routine:<br><figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">pragma</span> codeseg RAM_SEG</span></div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">ram_flash_write_block</span><span class="params">(<span class="keyword">uint16_t</span> addr, <span class="keyword">const</span> <span class="keyword">uint8_t</span> *buf)</span> </span>&#123;</div><div class="line">    <span class="keyword">const</span> <span class="keyword">uint8_t</span> *end = buf + BLOCK_SIZE;</div><div class="line">    <span class="keyword">uint8_t</span> *mem = (<span class="keyword">uint8_t</span> *)(addr);</div><div class="line"></div><div class="line">    <span class="comment">/* unlock flash */</span></div><div class="line">    FLASH_PUKR = FLASH_PUKR_KEY1;</div><div class="line">    FLASH_PUKR = FLASH_PUKR_KEY2;</div><div class="line">    <span class="keyword">while</span> (!(FLASH_IAPSR &amp; (<span class="number">1</span> &lt;&lt; FLASH_IAPSR_PUL)));</div><div class="line"></div><div class="line">    <span class="comment">/* enable block programming */</span></div><div class="line">    FLASH_CR2 = <span class="number">1</span> &lt;&lt; FLASH_CR2_PRG;</div><div class="line">    FLASH_NCR2 = ~(<span class="number">1</span> &lt;&lt; FLASH_NCR2_NPRG);</div><div class="line"></div><div class="line">    <span class="comment">/* write data from buffer */</span></div><div class="line">    <span class="keyword">while</span> (buf &lt; end)</div><div class="line">        *mem++ = *buf++;</div><div class="line"></div><div class="line">    <span class="comment">/* wait for operation to complete */</span></div><div class="line">    <span class="keyword">while</span> (!(FLASH_IAPSR &amp; (<span class="number">1</span> &lt;&lt; FLASH_IAPSR_EOP)));</div><div class="line"></div><div class="line">    <span class="comment">/* lock flash */</span></div><div class="line">    FLASH_IAPSR &amp;= ~(<span class="number">1</span> &lt;&lt; FLASH_IAPSR_PUL);</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>We use ‘standard’ mode which erases the block automatically. Some inline assembly is required to retrieve code section length:<br><figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">volatile</span> <span class="keyword">uint8_t</span> RAM_SEG_LEN;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">get_ram_section_length</span><span class="params">()</span> </span>&#123;</div><div class="line">    <span class="keyword">__asm__</span>(<span class="string">"mov _RAM_SEG_LEN, #l_RAM_SEG"</span>);</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>This trick works because RAM function is small enough to fit into 255 bytes - otherwise we’d use a slightly different mechanism. Finally, we copy the subroutine into RAM:<br><figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">static</span> <span class="keyword">uint8_t</span> f_ram[<span class="number">128</span>];</div><div class="line"><span class="function"><span class="keyword">static</span> <span class="title">void</span> <span class="params">(*flash_write_block)</span><span class="params">(<span class="keyword">uint16_t</span> addr, <span class="keyword">const</span> <span class="keyword">uint8_t</span> *buf)</span></span>;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">ram_cpy</span><span class="params">()</span> </span>&#123;</div><div class="line">    <span class="keyword">uint8_t</span> len = get_ram_section_length();</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">uint8_t</span> i = <span class="number">0</span>; i &lt; len; i++)</div><div class="line">        f_ram[i] = ((<span class="keyword">uint8_t</span> *) ram_flash_write_block)[i];</div><div class="line">    flash_write_block = (<span class="keyword">void</span> (*)(<span class="keyword">uint16_t</span>, <span class="keyword">const</span> <span class="keyword">uint8_t</span> *)) &amp;f_ram;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<h2 id="Interrupt-vector-table-relocation"><a href="#Interrupt-vector-table-relocation" class="headerlink" title="Interrupt vector table relocation"></a>Interrupt vector table relocation</h2><p>An interrupt vector table (IVT) is a chunk of address space. Each entry in the interrupt table is called an ‘interrupt vector’, which points to the address of an interrupt service routine (ISR). When interrupt occurs, CPU registers are pushed on the stack, program counter gets set to the address of the corresponding interrupt vector and the first instruction at that address is fetched. There is a dedicated INT instruction which jumps to the interrupt service routine address. After the ISR finishes, IRET instruction must be executed in order to restore contents of the registers.</p>
+<p>STM8 has 32 4-byte interrupt vectors starting at address 0x8000: RESET, TRAP, TLI and up to 29 user interrupts specific to each part. Immediately we start to see a problem: if the IVT is located at the beginning of the flash memory, which is where our bootloader resides, how is the main application going to handle interrupts? There are different ways to address this issue, but most of the time it boils down to something called ‘IVT relocation’. Essentially we are going to have 2 separate vector tables for the bootloader and main application. The IVT inside the bootloader will simply point to the corresponding vectors in the main application.</p>
+<p>Let’s illustrate all of the above on a random interrupt handler:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">tim4_isr</span><span class="params">()</span> __<span class="title">interrupt</span><span class="params">(TIM4_ISR)</span> __naked </span>&#123;</div><div class="line">    <span class="keyword">__asm__</span>(<span class="string">"jp 0x8464"</span>);</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>The interrupt handler is declared with <code>__naked</code> attribute, which instructs SDCC to omit <code>reti</code> instruction at the end of the handler, thus saving some program space. We can do so without any consequences, since we’re jumping to another interrupt handler which will execute this instruction anyway.</p>
+<p>I don’t like this approach, and here’s why. When interrupt occurs the CPU pushes registers on the stack, which takes 9 cycles. Then <code>int</code> instruction is executed (2 cycles) which jumps to our interrupt handler. Our interrupt handler performs a jump (2 cycles) to the application interrupt vector, which executes another <code>int</code> followed by the interrupt handler code (?? cycles) followed by <code>iret</code> (11 cycles). That’s an overhead of 26 CPU cycle minimum, where 4 cycles were introduced by our interrupt handler. We also waste about 3 bytes of flash memory per handler. As a result, we end up with vector table and interrupt handlers that pretty much do nothing but consume space and processor cycles.</p>
+<p>There is another approach: we can simply overwrite the first two blocks of memory with the application’s IVT. If we do that, however, our main application will always be executed instead of the bootloader, since we’ve overwritten the reset interrupt. The solution is to skip the first two bytes, thus leaving the reset vector intact:<br><figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">for</span> (<span class="keyword">uint8_t</span> i = <span class="number">2</span>; i &lt; <span class="number">2</span> * BLOCK_SIZE; i++) &#123;</div><div class="line">    *(<span class="keyword">uint8_t</span> *)(<span class="number">0x8000</span> + i) = ivt[i];</div><div class="line">    <span class="keyword">while</span> (!(FLASH_IAPSR &amp; (<span class="number">1</span> &lt;&lt; FLASH_IAPSR_EOP)));</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>The downside is that we can no longer use ST’s User Boot Code (UBC) feature, which translated into English means ‘write protection’. Having an unprotected bootloader implies that it can be overwritten by accident - that is a trade-off between performance and reliability.</p>
+<p>With this approach, main application requires a few adjustments. By default, SDCC will strip any unused interrupt handlers, which is not what we want. The easiest way to force SDCC to populate the whole IVT is to declare an empty interrupt handler for the last ISR:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">isr29</span><span class="params">()</span> __<span class="title">interrupt</span><span class="params">(<span class="number">29</span>)</span> __naked </span>&#123; ; &#125;</div></pre></td></tr></table></figure>
+<p>Finally, the size of the IVT must be subtracted from the application address, so if we compiled with <code>--code-loc 0x8400</code> option before, we’ll have to use 0x8380 instead.</p>
+<h2 id="Squeezing-the-last-bytes"><a href="#Squeezing-the-last-bytes" class="headerlink" title="Squeezing the last bytes"></a>Squeezing the last bytes</h2><p>After a few optimizations the bootloader size was slightly less than 700 bytes. That still wasn’t good enough for me, since I was aiming at less than 640 bytes (10 blocks). The obvious hot-spot was the IVT: if we relocate it by redirecting interrupt handlers we waste space and if we overwrite it by the bootloader we introduce some additional code, thus still wasting some space.</p>
+<p>Ideally, I wanted to implement my own interrupt table, however, it seems that it’s hard-coded inside SDCC. After spending some time with the documentation and browsing through the mailing lists, I just ended up looking at the compiler’s source code. There is a function <code>createInterruptVect()</code> inside <code>SDCCglue.c</code> which is responsible for generating the interrupt vectors. As it turns out, it checks whether or not <code>main()</code> is implemented and then proceeds with the interrupt table generation. So the solution was pretty simple: rename <em>main</em> into <em>bootloader_main</em> and no interrupt vectors will be generated.</p>
+<p>The initialization code is also omitted in this case, but that’s not a big deal - I simply copied the default initialization and added it to my interrupt table implementation:<br><figure class="highlight mipsasm"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div></pre></td><td class="code"><pre><div class="line">.module INIT</div><div class="line"><span class="meta">.macro</span> <span class="keyword">jump </span><span class="keyword">addr</span></div><div class="line">    <span class="keyword">jp </span><span class="number">0x8400</span> + <span class="keyword">addr</span></div><div class="line">    .ds <span class="number">1</span></div><div class="line"><span class="meta">.endm</span></div><div class="line"></div><div class="line">.area IVT</div><div class="line">int init <span class="comment">; reset</span></div><div class="line"><span class="keyword">jump </span><span class="number">0x4</span> <span class="comment">; trap</span></div><div class="line"><span class="keyword">jump </span><span class="number">0x8</span> <span class="comment">; int0</span></div><div class="line"><span class="keyword">jump </span><span class="number">0xc</span> <span class="comment">; int1</span></div><div class="line"><span class="comment">;  ...   ; int2..28</span></div><div class="line"><span class="keyword">jump </span><span class="number">0x7c</span> <span class="comment">; int29</span></div><div class="line"></div><div class="line">.area GSINIT</div><div class="line"><span class="symbol">init:</span></div><div class="line">    ldw x, <span class="comment">#l_DATA</span></div><div class="line">    <span class="keyword">jreq </span>   <span class="number">00002</span>$</div><div class="line"><span class="number">00001</span>$:</div><div class="line">    clr (s_DATA - <span class="number">1</span>, x)</div><div class="line">    decw x</div><div class="line">    <span class="keyword">jrne </span>   <span class="number">00001</span>$</div><div class="line"><span class="number">00002</span>$:</div><div class="line">    ldw x, <span class="comment">#l_INITIALIZER</span></div><div class="line">    <span class="keyword">jreq </span>   <span class="number">00004</span>$</div><div class="line"><span class="number">00003</span>$:</div><div class="line">    ld  a, (s_INITIALIZER - <span class="number">1</span>, x)</div><div class="line">    ld  (s_INITIALIZED - <span class="number">1</span>, x), a</div><div class="line">    decw    x</div><div class="line">    <span class="keyword">jrne </span>   <span class="number">00003</span>$</div><div class="line"><span class="number">00004</span>$:</div><div class="line">    <span class="keyword">jp </span> _bootloader_main</div></pre></td></tr></table></figure></p>
+<p>I created a macro for relocating interrupt vectors, so that it would be easier to specify boot address if it needs to be changed. In this case <code>jp</code> instruction is used instead of <code>int</code> so the overhead is just 1 CPU cycle (there’s also pipeline stall, but that’s a whole different topic). One padding byte has to be added due to <code>jp</code> using a 16-bit address instead of 24-bit.</p>
+<p>Now we can assemble the code with the <code>-g</code> option, which tells the assembler to treat all undefined symbols as external - they will be resolved by the linker afterwards.<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sdasstm8 -log init.s</div></pre></td></tr></table></figure></p>
+<p>We also need to pass these two options to the linker: <code>-Wl-bIVT=0x8000 -Wl-bGSINIT=0x8080</code>. This tells the linker to place IVT section at the beginning followed by GSINIT and rest of the code.</p>
+<p>Eventually, the bootloader ended up occupying around 550 bytes, which I could squeeze down to 500 if I stripped unused interrupt vectors and removed initialization code. And of course the bootloader no longer has to stay unsecured.</p>
+<h2 id="Benchmarking"><a href="#Benchmarking" class="headerlink" title="Benchmarking"></a>Benchmarking</h2><p>Let’s see whether the upload speed is any good. First, let’s upload an empty 6k binary via SWIM with stm8flash:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">$ time stm8flash -c stlinkv2 -p stm8s003f3 -w empty.bin</div><div class="line">Determine FLASH area</div><div class="line">Writing binary file 6144 bytes at 0x8000... OK</div><div class="line">Bytes written: 6144</div><div class="line"></div><div class="line">real    0m2.789s</div><div class="line">user    0m0.000s</div><div class="line">sys     0m0.024s</div></pre></td></tr></table></figure></p>
+<p>Now let’s repeat the same test with the bootloader:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">$ time python boot.py empty.bin</div><div class="line">Need to send 96 chunks</div><div class="line">64</div><div class="line">128</div><div class="line">192</div><div class="line">...</div><div class="line">6144</div><div class="line">Done</div><div class="line"></div><div class="line">real    0m1.596s</div><div class="line">user    0m0.048s</div><div class="line">sys     0m0.008s</div></pre></td></tr></table></figure></p>
+<p>Not bad. Initially, I wanted to compare the upload speed against the official STVP programming utility, but I was too lazy to register on ST’s website solely for the purpose of downloading this utility. So let’s just say that it’s good enough.</p>
+<p>Overall, I’m quite pleased with the results. Despite SDCC having a few limitations, none of them were show-stopping and the bootloader ended up being reasonably compact and fast.</p>
+<p>As always, code is on <a href="https://github.com/lujji/stm8-bootloader" target="_blank" rel="external">github</a>.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://lujji.github.io/blog/serial-bootloader-for-stm8/" data-id="cj62qqfa20007sfpv0ksf89gs" class="article-share-link">Share</a>
+      
+        <a href="http://lujji.github.io/blog/serial-bootloader-for-stm8/#disqus_thread" class="article-comment-link">Comments</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/blog/tags/bootloader/">bootloader</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/blog/tags/sdcc/">sdcc</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/blog/tags/stm8/">stm8</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/blog/tags/tutorial/">tutorial</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/blog/mixing-c-and-assembly-on-stm8/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older Posts</strong>
+      <div class="article-nav-title">Mixing C and assembly on STM8</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+<section id="comments">
+  <div id="disqus_thread">
+    <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  </div>
+</section>
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2017/08/">August 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2017/07/">July 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2017/04/">April 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2017/03/">March 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2017/02/">February 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2017/01/">January 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2016/10/">October 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2016/09/">September 2016</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/blog/serial-bootloader-for-stm8/">Serial bootloader for STM8</a>
+          </li>
+        
+          <li>
+            <a href="/blog/mixing-c-and-assembly-on-stm8/">Mixing C and assembly on STM8</a>
+          </li>
+        
+          <li>
+            <a href="/blog/executing-code-from-ram-on-stm8/">Executing code from RAM on STM8</a>
+          </li>
+        
+          <li>
+            <a href="/blog/bare-metal-programming-stm8-part2/">Bare metal programming: STM8 (Part 2)</a>
+          </li>
+        
+          <li>
+            <a href="/blog/bare-metal-programming-stm8/">Bare metal programming: STM8</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2017 lujji<br>      
+      lujji at protonmail com
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/blog/" class="mobile-nav-link">Home</a>
+  
+    <a href="/blog/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+<script>
+  var disqus_shortname = 'lujji';
+  
+  var disqus_url = 'http://lujji.github.io/blog/serial-bootloader-for-stm8/';
+  
+  (function(){
+    var dsq = document.createElement('script');
+    dsq.type = 'text/javascript';
+    dsq.async = true;
+    dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/blog/fancybox/jquery.fancybox.css">
+  <script src="/blog/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/blog/js/script.js"></script>
+
+  </div>
+</body>
+</html>
