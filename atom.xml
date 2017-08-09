@@ -5,7 +5,7 @@
   <link href="/blog/atom.xml" rel="self"/>
   
   <link href="http://lujji.github.io/blog/"/>
-  <updated>2017-08-07T22:39:40.002Z</updated>
+  <updated>2017-08-08T17:19:56.272Z</updated>
   <id>http://lujji.github.io/blog/</id>
   
   <author>
@@ -20,7 +20,7 @@
     <link href="http://lujji.github.io/blog/serial-bootloader-for-stm8/"/>
     <id>http://lujji.github.io/blog/serial-bootloader-for-stm8/</id>
     <published>2017-08-07T21:00:00.000Z</published>
-    <updated>2017-08-07T22:39:40.002Z</updated>
+    <updated>2017-08-08T17:19:56.272Z</updated>
     
     <content type="html"><![CDATA[<p>This article will cover developing a serial bootloader for STM8S microcontrollers.</p>
 <a id="more"></a>
@@ -67,7 +67,7 @@
 <p>With this approach, main application requires a few adjustments. By default, SDCC will strip any unused interrupt handlers, which is not what we want. The easiest way to force SDCC to populate the whole IVT is to declare an empty interrupt handler for the last ISR:</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">isr29</span><span class="params">()</span> __<span class="title">interrupt</span><span class="params">(<span class="number">29</span>)</span> __naked </span>&#123; ; &#125;</div></pre></td></tr></table></figure>
 <p>Finally, the size of the IVT must be subtracted from the application address, so if we compiled with <code>--code-loc 0x8400</code> option before, we’ll have to use 0x8380 instead.</p>
-<h2 id="Squeezing-the-last-bytes"><a href="#Squeezing-the-last-bytes" class="headerlink" title="Squeezing the last bytes"></a>Squeezing the last bytes</h2><p>After a few optimizations the bootloader size was slightly less than 700 bytes. That still wasn’t good enough for me, since I was aiming at less than 640 bytes (10 blocks). The obvious hot-spot was the IVT: if we relocate it by redirecting interrupt handlers we waste space and if we overwrite it by the bootloader we introduce some additional code, thus still wasting some space.</p>
+<h2 id="Squeezing-the-last-bytes"><a href="#Squeezing-the-last-bytes" class="headerlink" title="Squeezing the last bytes"></a>Squeezing the last bytes</h2><p>After a few optimizations the bootloader size was slightly below 700 bytes. That still wasn’t good enough for me, since I was aiming at less than 640 bytes (10 blocks). The obvious hot-spot was the IVT: if we relocate it by redirecting interrupt handlers we waste space and if we overwrite it by the bootloader we introduce some additional code, thus still wasting some space.</p>
 <p>Ideally, I wanted to implement my own interrupt table, however, it seems that it’s hard-coded inside SDCC. After spending some time with the documentation and browsing through the mailing lists, I just ended up looking at the compiler’s source code. There is a function <code>createInterruptVect()</code> inside <code>SDCCglue.c</code> which is responsible for generating the interrupt vectors. As it turns out, it checks whether or not <code>main()</code> is implemented and then proceeds with the interrupt table generation. So the solution was pretty simple: rename <em>main</em> into <em>bootloader_main</em> and no interrupt vectors will be generated.</p>
 <p>The initialization code is also omitted in this case, but that’s not a big deal - I simply copied the default initialization and added it to my interrupt table implementation:<br><figure class="highlight mipsasm"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div></pre></td><td class="code"><pre><div class="line">.module INIT</div><div class="line"><span class="meta">.macro</span> <span class="keyword">jump </span><span class="keyword">addr</span></div><div class="line">    <span class="keyword">jp </span><span class="number">0x8400</span> + <span class="keyword">addr</span></div><div class="line">    .ds <span class="number">1</span></div><div class="line"><span class="meta">.endm</span></div><div class="line"></div><div class="line">.area IVT</div><div class="line">int init <span class="comment">; reset</span></div><div class="line"><span class="keyword">jump </span><span class="number">0x4</span> <span class="comment">; trap</span></div><div class="line"><span class="keyword">jump </span><span class="number">0x8</span> <span class="comment">; int0</span></div><div class="line"><span class="keyword">jump </span><span class="number">0xc</span> <span class="comment">; int1</span></div><div class="line"><span class="comment">;  ...   ; int2..28</span></div><div class="line"><span class="keyword">jump </span><span class="number">0x7c</span> <span class="comment">; int29</span></div><div class="line"></div><div class="line">.area GSINIT</div><div class="line"><span class="symbol">init:</span></div><div class="line">    ldw x, <span class="comment">#l_DATA</span></div><div class="line">    <span class="keyword">jreq </span>   <span class="number">00002</span>$</div><div class="line"><span class="number">00001</span>$:</div><div class="line">    clr (s_DATA - <span class="number">1</span>, x)</div><div class="line">    decw x</div><div class="line">    <span class="keyword">jrne </span>   <span class="number">00001</span>$</div><div class="line"><span class="number">00002</span>$:</div><div class="line">    ldw x, <span class="comment">#l_INITIALIZER</span></div><div class="line">    <span class="keyword">jreq </span>   <span class="number">00004</span>$</div><div class="line"><span class="number">00003</span>$:</div><div class="line">    ld  a, (s_INITIALIZER - <span class="number">1</span>, x)</div><div class="line">    ld  (s_INITIALIZED - <span class="number">1</span>, x), a</div><div class="line">    decw    x</div><div class="line">    <span class="keyword">jrne </span>   <span class="number">00003</span>$</div><div class="line"><span class="number">00004</span>$:</div><div class="line">    <span class="keyword">jp </span> _bootloader_main</div></pre></td></tr></table></figure></p>
 <p>I created a macro for relocating interrupt vectors, so that it would be easier to specify boot address if it needs to be changed. In this case <code>jp</code> instruction is used instead of <code>int</code> so the overhead is just 1 CPU cycle (there’s also pipeline stall, but that’s a whole different topic). One padding byte has to be added due to <code>jp</code> using a 16-bit address instead of 24-bit.</p>
@@ -146,11 +146,11 @@
     </summary>
     
     
+      <category term="assembly" scheme="http://lujji.github.io/blog/tags/assembly/"/>
+    
       <category term="sdcc" scheme="http://lujji.github.io/blog/tags/sdcc/"/>
     
       <category term="stm8" scheme="http://lujji.github.io/blog/tags/stm8/"/>
-    
-      <category term="assembly" scheme="http://lujji.github.io/blog/tags/assembly/"/>
     
   </entry>
   
@@ -184,11 +184,11 @@
     </summary>
     
     
+      <category term="assembly" scheme="http://lujji.github.io/blog/tags/assembly/"/>
+    
       <category term="sdcc" scheme="http://lujji.github.io/blog/tags/sdcc/"/>
     
       <category term="stm8" scheme="http://lujji.github.io/blog/tags/stm8/"/>
-    
-      <category term="assembly" scheme="http://lujji.github.io/blog/tags/assembly/"/>
     
   </entry>
   
