@@ -72,29 +72,8 @@
     </url>
 
     <url>
-        <loc>http://lujji.github.io/blog/tags/bare-metal/</loc>
-        <lastmod>2017-07-30T00:51:06.908Z</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.2</priority>
-    </url>
-
-    <url>
         <loc>http://lujji.github.io/blog/tags/assembly/</loc>
         <lastmod>2017-08-03T17:42:15.483Z</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.2</priority>
-    </url>
-
-    <url>
-        <loc>http://lujji.github.io/blog/tags/sdcc/</loc>
-        <lastmod>2017-08-08T17:19:56.272Z</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.2</priority>
-    </url>
-
-    <url>
-        <loc>http://lujji.github.io/blog/tags/stm8/</loc>
-        <lastmod>2017-08-08T17:19:56.272Z</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.2</priority>
     </url>
@@ -109,6 +88,27 @@
     <url>
         <loc>http://lujji.github.io/blog/tags/tutorial/</loc>
         <lastmod>2017-08-08T17:19:56.272Z</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.2</priority>
+    </url>
+
+    <url>
+        <loc>http://lujji.github.io/blog/tags/bare-metal/</loc>
+        <lastmod>2017-12-07T23:49:12.504Z</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.2</priority>
+    </url>
+
+    <url>
+        <loc>http://lujji.github.io/blog/tags/sdcc/</loc>
+        <lastmod>2017-12-07T23:49:12.504Z</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.2</priority>
+    </url>
+
+    <url>
+        <loc>http://lujji.github.io/blog/tags/stm8/</loc>
+        <lastmod>2017-12-07T23:49:12.504Z</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.2</priority>
     </url>

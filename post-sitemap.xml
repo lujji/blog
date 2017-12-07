@@ -7,6 +7,14 @@
     </url>
 
     <url>
+        <loc>http://lujji.github.io/blog/bare-metal-programming-stm8/</loc>
+        <lastmod>2017-12-07T23:49:12.504Z</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.6</priority>
+
+    </url>
+
+    <url>
         <loc>http://lujji.github.io/blog/serial-bootloader-for-stm8/</loc>
         <lastmod>2017-08-08T17:19:56.272Z</lastmod>
         <changefreq>weekly</changefreq>
@@ -33,14 +41,6 @@
     <url>
         <loc>http://lujji.github.io/blog/executing-code-from-ram-on-stm8/</loc>
         <lastmod>2017-07-26T20:44:57.288Z</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.6</priority>
-
-    </url>
-
-    <url>
-        <loc>http://lujji.github.io/blog/bare-metal-programming-stm8/</loc>
-        <lastmod>2017-07-23T23:28:34.114Z</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.6</priority>
 
