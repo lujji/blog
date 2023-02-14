@@ -1,78 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet type="text/xsl" href="sitemap.xsl"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
     <url>
-        <loc>http://lujji.github.io/blog</loc>
+        <loc>http://lujji.github.io/blog/</loc>
         <changefreq>daily</changefreq>
         <priority>1</priority>
     </url>
 
+
     <url>
         <loc>http://lujji.github.io/blog/bare-metal-programming-stm8/</loc>
-        <lastmod>2017-12-07T23:49:12.504Z</lastmod>
+        <lastmod>2023-02-14T11:37:17.395Z</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.6</priority>
 
     </url>
 
     <url>
-        <loc>http://lujji.github.io/blog/serial-bootloader-for-stm8/</loc>
-        <lastmod>2017-08-08T17:19:56.272Z</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.6</priority>
-
-    </url>
-
-    <url>
-        <loc>http://lujji.github.io/blog/mixing-c-and-assembly-on-stm8/</loc>
-        <lastmod>2017-08-03T17:42:15.483Z</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.6</priority>
-
-    </url>
-
-    <url>
-        <loc>http://lujji.github.io/blog/bare-metal-programming-stm8-part2/</loc>
-        <lastmod>2017-07-30T00:51:06.908Z</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.6</priority>
-
-    </url>
-
-    <url>
-        <loc>http://lujji.github.io/blog/executing-code-from-ram-on-stm8/</loc>
-        <lastmod>2017-07-26T20:44:57.288Z</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.6</priority>
-
-    </url>
-
-    <url>
-        <loc>http://lujji.github.io/blog/reverse-engineering-stlink-firmware-part2/</loc>
-        <lastmod>2017-03-18T21:01:33.915Z</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.6</priority>
-
-    </url>
-
-    <url>
-        <loc>http://lujji.github.io/blog/reverse-engineering-stlink-firmware/</loc>
-        <lastmod>2017-03-18T21:01:22.887Z</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.6</priority>
-
-    </url>
-
-    <url>
-        <loc>http://lujji.github.io/blog/installing-blackmagic-via-stlink-bootloader/</loc>
-        <lastmod>2017-03-18T21:00:59.623Z</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.6</priority>
-
-    </url>
-
-    <url>
-        <loc>http://lujji.github.io/blog/esp-httpd/</loc>
-        <lastmod>2017-02-28T23:36:57.471Z</lastmod>
+        <loc>http://lujji.github.io/blog/power-analysis-with-ds1000z/</loc>
+        <lastmod>2023-02-14T10:54:42.242Z</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.6</priority>
 
@@ -80,10 +26,75 @@
 
     <url>
         <loc>http://lujji.github.io/blog/stlink-clone-trace/</loc>
-        <lastmod>2016-10-13T01:56:37.352Z</lastmod>
+        <lastmod>2023-01-28T23:19:10.000Z</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.6</priority>
+
+    </url>
+
+    <url>
+        <loc>http://lujji.github.io/blog/serial-bootloader-for-stm8/</loc>
+        <lastmod>2017-08-08T17:19:56.000Z</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.6</priority>
+
+    </url>
+
+    <url>
+        <loc>http://lujji.github.io/blog/mixing-c-and-assembly-on-stm8/</loc>
+        <lastmod>2017-08-03T17:42:14.000Z</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.6</priority>
+
+    </url>
+
+    <url>
+        <loc>http://lujji.github.io/blog/bare-metal-programming-stm8-part2/</loc>
+        <lastmod>2017-07-30T00:51:06.000Z</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.6</priority>
+
+    </url>
+
+    <url>
+        <loc>http://lujji.github.io/blog/executing-code-from-ram-on-stm8/</loc>
+        <lastmod>2017-07-26T20:44:56.000Z</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.6</priority>
+
+    </url>
+
+    <url>
+        <loc>http://lujji.github.io/blog/reverse-engineering-stlink-firmware-part2/</loc>
+        <lastmod>2017-03-18T21:01:32.000Z</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.6</priority>
+
+    </url>
+
+    <url>
+        <loc>http://lujji.github.io/blog/reverse-engineering-stlink-firmware/</loc>
+        <lastmod>2017-03-18T21:01:22.000Z</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.6</priority>
+
+    </url>
+
+    <url>
+        <loc>http://lujji.github.io/blog/installing-blackmagic-via-stlink-bootloader/</loc>
+        <lastmod>2017-03-18T21:00:58.000Z</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.6</priority>
+
+    </url>
+
+    <url>
+        <loc>http://lujji.github.io/blog/esp-httpd/</loc>
+        <lastmod>2017-02-28T23:36:56.000Z</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.6</priority>
 
     </url>
 
 </urlset>
+<!-- XML Sitemap generated by Hexo SEO Friendly Sitemap Generator -->

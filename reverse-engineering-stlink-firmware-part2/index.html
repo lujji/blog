@@ -6,23 +6,25 @@
   <title>Reverse-engineering ST-Link firmware - Part 2 | lujji</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="description" content="This is the second part of ST-Link reverse-engineering, where I cover dumping the firmware, extracting and reverse-engineering the bootloader, and finally, patching the bootloader in order to disable">
-<meta name="keywords" content="st-link,reverse-engineering,stm32">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Reverse-engineering ST-Link firmware - Part 2">
 <meta property="og:url" content="http://lujji.github.io/blog/reverse-engineering-stlink-firmware-part2/index.html">
 <meta property="og:site_name" content="lujji">
 <meta property="og:description" content="This is the second part of ST-Link reverse-engineering, where I cover dumping the firmware, extracting and reverse-engineering the bootloader, and finally, patching the bootloader in order to disable">
-<meta property="og:locale" content="en">
+<meta property="og:locale" content="en_US">
 <meta property="og:image" content="http://lujji.github.io/blog/reverse-engineering-stlink-firmware-part2/stlink_dump.png">
 <meta property="og:image" content="http://lujji.github.io/blog/reverse-engineering-stlink-firmware-part2/dump_visualization.png">
 <meta property="og:image" content="http://lujji.github.io/blog/reverse-engineering-stlink-firmware-part2/option_bytes.png">
 <meta property="og:image" content="http://lujji.github.io/blog/reverse-engineering-stlink-firmware-part2/hopper.png">
 <meta property="og:image" content="http://lujji.github.io/blog/reverse-engineering-stlink-firmware-part2/set_option_bytes.png">
 <meta property="og:image" content="http://lujji.github.io/blog/reverse-engineering-stlink-firmware-part2/main_loop.png">
-<meta property="og:updated_time" content="2017-03-18T21:01:33.915Z">
+<meta property="article:published_time" content="2016-10-16T21:00:00.000Z">
+<meta property="article:modified_time" content="2017-03-18T21:01:32.000Z">
+<meta property="article:author" content="lujji">
+<meta property="article:tag" content="st-link">
+<meta property="article:tag" content="reverse-engineering">
+<meta property="article:tag" content="stm32">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Reverse-engineering ST-Link firmware - Part 2">
-<meta name="twitter:description" content="This is the second part of ST-Link reverse-engineering, where I cover dumping the firmware, extracting and reverse-engineering the bootloader, and finally, patching the bootloader in order to disable">
 <meta name="twitter:image" content="http://lujji.github.io/blog/reverse-engineering-stlink-firmware-part2/stlink_dump.png">
   
     <link rel="alternate" href="atom.xml" title="lujji" type="application/atom+xml">
@@ -33,10 +35,12 @@
   
     <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
   
-  <link rel="stylesheet" href="/blog/css/style.css">
+  
+<link rel="stylesheet" href="/blog/css/style.css">
+
   
 
-</head>
+<meta name="generator" content="Hexo 6.3.0"></head>
 
 <body>
   <div id="container">
@@ -64,7 +68,7 @@
         
       </nav>
       <nav id="sub-nav">
-      <a id="nav-github-link" class="nav-icon" href="https://github.com/lujji" title="GitHub"></a>
+      <a id="nav-github-link" class="nav-icon" target="_blank" rel="noopener" href="https://github.com/lujji" title="GitHub"></a>
         
           <a id="nav-rss-link" class="nav-icon" href="atom.xml" title="RSS Feed"></a>
         
@@ -76,6 +80,7 @@
     </div>
   </div>
 </header>
+
       <div class="outer">
         <section id="main"><article id="post-reverse-engineering-stlink-firmware-part2" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
@@ -100,44 +105,55 @@
     <div class="article-entry" itemprop="articleBody">
       
         <p>This is the second part of ST-Link reverse-engineering, where I cover dumping the firmware, extracting and reverse-engineering the bootloader, and finally, patching the bootloader in order to disable Level 1 protection.</p>
-<a id="more"></a>
+<span id="more"></span>
 <hr>
 <h2 id="Dumping-the-bootloader"><a href="#Dumping-the-bootloader" class="headerlink" title="Dumping the bootloader"></a>Dumping the bootloader</h2><p>Dumping the firmware was the easiest part. Once the bootloader passes control to our code, we initialize clocks and UART. After that we send two marker bytes to indicate beginning of the firmware and then simply read all the flash memory starting from the address 0x08000000 and send it over UART one byte at a time. Since I was too lazy to implement any flow control, I opted for modest 9600 baud and added a small delay after each byte transfer just to make sure that I don’t hit a buffer overrun on my UART-USB converter. TX pin on UART2 is PA2 (there are solder-bridges for RX and TX on Discovery boards).</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</div><div class="line">    clock_setup();</div><div class="line">    usart_setup();</div><div class="line">    gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_50_MHZ,</div><div class="line">            GPIO_CNF_OUTPUT_PUSHPULL, LED_PIN);</div><div class="line">    gpio_clear(GPIOA, LED_PIN);</div><div class="line"></div><div class="line">    usart_send_blocking(USART2, <span class="number">0xAB</span>);</div><div class="line">    usart_send_blocking(USART2, <span class="number">0xCD</span>);</div><div class="line"></div><div class="line">    <span class="keyword">for</span> (<span class="keyword">uint32_t</span> addr = <span class="number">0x08000000</span>; addr &lt;= <span class="number">0x08010000</span>; addr++) &#123;</div><div class="line">        usart_send_blocking(USART2, *((<span class="keyword">uint16_t</span> *) addr));</div><div class="line">        delay(<span class="number">1</span>);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="keyword">while</span> (<span class="number">1</span>) &#123;</div><div class="line">        <span class="comment">/* loop forever */</span></div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    clock_setup();</span><br><span class="line">    usart_setup();</span><br><span class="line">    gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_50_MHZ,</span><br><span class="line">            GPIO_CNF_OUTPUT_PUSHPULL, LED_PIN);</span><br><span class="line">    gpio_clear(GPIOA, LED_PIN);</span><br><span class="line"></span><br><span class="line">    usart_send_blocking(USART2, <span class="number">0xAB</span>);</span><br><span class="line">    usart_send_blocking(USART2, <span class="number">0xCD</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">uint32_t</span> addr = <span class="number">0x08000000</span>; addr &lt;= <span class="number">0x08010000</span>; addr++) &#123;</span><br><span class="line">        usart_send_blocking(USART2, *((<span class="keyword">uint16_t</span> *) addr));</span><br><span class="line">        delay(<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> (<span class="number">1</span>) &#123;</span><br><span class="line">        <span class="comment">/* loop forever */</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
 <p>After I accidentally triggered mass-erase on my Nucleo board, I had only one board with ST-Link v2-1 left. I didn’t want to risk, so I tried dumping a Chinese ST-Link v2 clone first. Once the update process finished, the programmer immediately started to spit out it’s own flash contents over the serial interface.</p>
 <img src="/blog/reverse-engineering-stlink-firmware-part2/stlink_dump.png" alt="note: screenshot shows dumping of ST-Link v2-1" title="note: screenshot shows dumping of ST-Link v2-1">
+
 <p>As I mentioned before, visualizing raw binary data is a very useful trick during analysis. Let’s see what the dump looks like.</p>
 <img src="/blog/reverse-engineering-stlink-firmware-part2/dump_visualization.png" alt="Firmware dump visualization" title="Firmware dump visualization">
+
 <p>We clearly see the separation between the bootloader and user code. Most importantly, there is a small chunk of data near the end of the bootloader section (later I discovered these bytes are written by the bootloader at the end of the update process to indicate a valid firmware). We can also see that first two pages of memory in the user code section were erased and now contain our dumper code.</p>
-<p>As I mentioned in Part 1, my attempt to access the microcontroller through a debugger resulted in flash mass-erase. According to the reference manual, it implies that Level 1 protection is activated: <em>“Level 1 protection allows to recover a programmed part by erasing the entire Flash content. This is done by re-programming the RDP option byte from Level 1 to Level 0.”</em> The <a href="http://www.st.com/content/ccc/resource/technical/document/programming_manual/10/98/e8/d4/2b/51/4b/f5/CD00283419.pdf/files/CD00283419.pdf/jcr:content/translations/en.CD00283419.pdf" target="_blank" rel="external">programming manual</a> tells us where the option bytes are located.</p>
-<img src="/blog/reverse-engineering-stlink-firmware-part2/option_bytes.png" alt="" ""="" title="">
-<p>Before we move on to reverse-engineering the binary, let’s extract the bootloader section first, excluding the version bytes near the end:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ cat stlink_v2_dump.bin | head -c 15360 &gt; ST-Link_bootloader.bin</div></pre></td></tr></table></figure></p>
+<p>As I mentioned in Part 1, my attempt to access the microcontroller through a debugger resulted in flash mass-erase. According to the reference manual, it implies that Level 1 protection is activated: <em>“Level 1 protection allows to recover a programmed part by erasing the entire Flash content. This is done by re-programming the RDP option byte from Level 1 to Level 0.”</em> The <a target="_blank" rel="noopener" href="http://www.st.com/content/ccc/resource/technical/document/programming_manual/10/98/e8/d4/2b/51/4b/f5/CD00283419.pdf/files/CD00283419.pdf/jcr:content/translations/en.CD00283419.pdf">programming manual</a> tells us where the option bytes are located.</p>
+<img src="/blog/reverse-engineering-stlink-firmware-part2/option_bytes.png" alt="""" title="""">
+
+<p>Before we move on to reverse-engineering the binary, let’s extract the bootloader section first, excluding the version bytes near the end:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">cat</span> stlink_v2_dump.bin | <span class="built_in">head</span> -c 15360 &gt; ST-Link_bootloader.bin</span><br></pre></td></tr></table></figure>
 <p>At this point, flashing bootloader onto an empty microcontroller will make the update utility think a blank ST-Link is connected. It will let you choose which firmware to flash, however the results will not be any different from what we achieved before by tricking the updater into flashing a different firmware.</p>
 <h2 id="Reverse-engineering"><a href="#Reverse-engineering" class="headerlink" title="Reverse-engineering"></a>Reverse-engineering</h2><p>There are many disassemblers available for ARM out there. One of them even works. Unfortunately, IDA demo version does not support binary files. I tried using radare2, but after a while decided that I don’t have a spare lifetime to learn how to use all of it’s hot-keys and commands.</p>
 <p>Eventually, I came across Hopper, which is a cross-platform disassembler. Demo version is limited to 30min sessions and does not allow saving projects or exporting files. That seemed good enough for me, so I gave it a try.</p>
 <p>First things first, I searched for <code>0x1FFFF800</code> and sure enough - this constant was present.</p>
 <img src="/blog/reverse-engineering-stlink-firmware-part2/hopper.png" alt="Hopper" title="Hopper">
-<p>It is referenced only once (hitting <code>X</code> lists all the references). If we follow the reference, we end up in a subroutine that presumably sets up the option bytes. Hopper can also generate pseudo-code. It’s not that great with loops and conditionals, but comes in handy when analyzing arithmetic operations.<br><img src="/blog/reverse-engineering-stlink-firmware-part2/set_option_bytes.png" alt="Pseudo-code" title="Pseudo-code"></p>
+
+<p>It is referenced only once (hitting <code>X</code> lists all the references). If we follow the reference, we end up in a subroutine that presumably sets up the option bytes. Hopper can also generate pseudo-code. It’s not that great with loops and conditionals, but comes in handy when analyzing arithmetic operations.</p>
+<img src="/blog/reverse-engineering-stlink-firmware-part2/set_option_bytes.png" alt="Pseudo-code" title="Pseudo-code">
+
 <p>This function is called only once, and if we follow the reference we end up in a section with quite a few function calls. Control flow graph shows that we identified main program loop at 0x2198. I tried visiting all the functions and guessing what they do.</p>
 <img src="/blog/reverse-engineering-stlink-firmware-part2/main_loop.png" alt="Main loop" title="Main loop">
+
 <h2 id="Disabling-protection"><a href="#Disabling-protection" class="headerlink" title="Disabling protection"></a>Disabling protection</h2><p>We know that the function call to <code>option_bytes_config</code> is located at 0x21B2 in the binary dump. Let’s try to ‘nop’ it and see what we get. NOP is a pseudo-instruction on ARM cores, so we have to use something like ‘mov r8,r8’ to skip a cycle.</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">$ <span class="built_in">echo</span> <span class="string">"mov r8, r8"</span> | arm-none-eabi-as -mthumb -march=armv7 &amp;&amp; arm-none-eabi-objdump <span class="_">-d</span> a.out</div><div class="line">...</div><div class="line">   0:   46c0            nop                     ; (mov r8, r8)</div></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">echo</span> <span class="string">&quot;mov r8, r8&quot;</span> | arm-none-eabi-as -mthumb -march=armv7 &amp;&amp; arm-none-eabi-objdump -d a.out</span><br><span class="line">...</span><br><span class="line">   0:   46c0            nop                     ; (mov r8, r8)</span><br></pre></td></tr></table></figure>
+
 <p>Branch instruction occupies 4 bytes, which means we have to patch <code>C0 46 C0 46</code> to ‘nop’ the function call.</p>
 <p>Next we flash the patched bootloader and use the updater utility to upload ST-Link firmware. Now let’s try dumping the firmware with openocd to see if protection is still enabled.</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">$ openocd <span class="_">-f</span> interface/stlink-v2.cfg -c <span class="string">'transport select hla_swd'</span> \</div><div class="line">          <span class="_">-f</span> target/stm32f1x.cfg -c <span class="string">'adapter_khz 4000'</span> -c init -c <span class="string">'reset halt'</span> \</div><div class="line">          -c <span class="string">'dump_image dump.bin 0x08000000 0x10000'</span> -c shutdown</div></pre></td></tr></table></figure>
-<p>And this is what we get:<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">...</div><div class="line">stm32f1x.cpu: target state: halted</div><div class="line">target halted due to debug-request, current mode: Thread</div><div class="line">xPSR: 0x01000000 pc: 0x08002764 msp: 0x20000800</div><div class="line">dumped 65536 bytes in 0.427944s (149.552 KiB/s)</div></pre></td></tr></table></figure></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ openocd -f interface/stlink-v2.cfg -c <span class="string">&#x27;transport select hla_swd&#x27;</span> \</span><br><span class="line">          -f target/stm32f1x.cfg -c <span class="string">&#x27;adapter_khz 4000&#x27;</span> -c init -c <span class="string">&#x27;reset halt&#x27;</span> \</span><br><span class="line">          -c <span class="string">&#x27;dump_image dump.bin 0x08000000 0x10000&#x27;</span> -c shutdown</span><br></pre></td></tr></table></figure>
+<p>And this is what we get:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">stm32f1x.cpu: target state: halted</span><br><span class="line">target halted due to debug-request, current mode: Thread</span><br><span class="line">xPSR: 0x01000000 pc: 0x08002764 msp: 0x20000800</span><br><span class="line">dumped 65536 bytes in 0.427944s (149.552 KiB/s)</span><br></pre></td></tr></table></figure>
 <p>Success!</p>
 <h2 id="Conclusion"><a href="#Conclusion" class="headerlink" title="Conclusion"></a>Conclusion</h2><p>After I dumped the firmware from the ST-Link v2 clone I successfully repeated the same procedure for an ST-Link v2-1. I used the same approach for removing protection, although the main program loop was a bit trickier to find. Being able to use a debugger makes it significantly easier to study the functionality of the bootloader and main firmware.</p>
 
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://lujji.github.io/blog/reverse-engineering-stlink-firmware-part2/" data-id="cjax4wkzg000bqas6mfu7o7j4" class="article-share-link">Share</a>
+      <a data-url="http://lujji.github.io/blog/reverse-engineering-stlink-firmware-part2/" data-id="cle467ssm000aaxcx1k9382nw" class="article-share-link">Share</a>
       
         <a href="http://lujji.github.io/blog/reverse-engineering-stlink-firmware-part2/#disqus_thread" class="article-comment-link">Comments</a>
       
       
-  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/blog/tags/reverse-engineering/">reverse-engineering</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/blog/tags/st-link/">st-link</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/blog/tags/stm32/">stm32</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/blog/tags/reverse-engineering/" rel="tag">reverse-engineering</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/blog/tags/st-link/" rel="tag">st-link</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/blog/tags/stm32/" rel="tag">stm32</a></li></ul>
 
     </footer>
   </div>
@@ -168,7 +184,7 @@
 
 <section id="comments">
   <div id="disqus_thread">
-    <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    <noscript>Please enable JavaScript to view the <a target="_blank" rel="noopener" href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
   </div>
 </section>
 </section>
@@ -180,19 +196,13 @@
   
     
   <div class="widget-wrap">
-    <h3 class="widget-title">Archives</h3>
-    <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2017/08/">August 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2017/07/">July 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2017/04/">April 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2017/03/">March 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2017/02/">February 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2017/01/">January 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2016/10/">October 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2016/09/">September 2016</a></li></ul>
-    </div>
-  </div>
-
-
-  
-    
-  <div class="widget-wrap">
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/blog/power-analysis-with-ds1000z/">Power analysis with Rigol DS1000Z</a>
+          </li>
         
           <li>
             <a href="/blog/serial-bootloader-for-stm8/">Serial bootloader for STM8</a>
@@ -214,9 +224,30 @@
             <a href="/blog/bare-metal-programming-stm8/">Bare metal programming: STM8</a>
           </li>
         
+          <li>
+            <a href="/blog/installing-blackmagic-via-stlink-bootloader/">Installing Black Magic via ST-Link bootloader</a>
+          </li>
+        
+          <li>
+            <a href="/blog/esp-httpd/">HTTP server with WebSockets on ESP8266</a>
+          </li>
+        
+          <li>
+            <a href="/blog/reverse-engineering-stlink-firmware-part2/">Reverse-engineering ST-Link firmware - Part 2</a>
+          </li>
+        
+          <li>
+            <a href="/blog/reverse-engineering-stlink-firmware/">Reverse-engineering ST-Link firmware</a>
+          </li>
+        
+          <li>
+            <a href="/blog/stlink-clone-trace/">Adding Trace support to ST-Link clones</a>
+          </li>
+        
       </ul>
     </div>
   </div>
+
 
   
 </aside>
@@ -226,7 +257,7 @@
   
   <div class="outer">
     <div id="footer-info" class="inner">
-      &copy; 2017 lujji<br>      
+      &copy; 2023 lujji<br>      
       lujji at protonmail com
     </div>
   </div>
@@ -258,11 +289,17 @@
 <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
 
 
-  <link rel="stylesheet" href="/blog/fancybox/jquery.fancybox.css">
-  <script src="/blog/fancybox/jquery.fancybox.pack.js"></script>
+  
+<link rel="stylesheet" href="/blog/fancybox/jquery.fancybox.css">
+
+  
+<script src="/blog/fancybox/jquery.fancybox.pack.js"></script>
+
+
 
 
 <script src="/blog/js/script.js"></script>
+
 
   </div>
 </body>

@@ -5,21 +5,23 @@
   
   <title>Reverse-engineering ST-Link firmware | lujji</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="This is the first part of ST-Link reverse-engineering, where I cover analyzing and decompiling the updater utility, decrypting and encrypting firmware binaries and running custom code on ST-Link v2/2-">
-<meta name="keywords" content="st-link,reverse-engineering,stm32">
+  <meta name="description" content="This is the first part of ST-Link reverse-engineering, where I cover analyzing and decompiling the updater utility, decrypting and encrypting firmware binaries and running custom code on ST-Link v2&amp;#x">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Reverse-engineering ST-Link firmware">
 <meta property="og:url" content="http://lujji.github.io/blog/reverse-engineering-stlink-firmware/index.html">
 <meta property="og:site_name" content="lujji">
-<meta property="og:description" content="This is the first part of ST-Link reverse-engineering, where I cover analyzing and decompiling the updater utility, decrypting and encrypting firmware binaries and running custom code on ST-Link v2/2-">
-<meta property="og:locale" content="en">
+<meta property="og:description" content="This is the first part of ST-Link reverse-engineering, where I cover analyzing and decompiling the updater utility, decrypting and encrypting firmware binaries and running custom code on ST-Link v2&amp;#x">
+<meta property="og:locale" content="en_US">
 <meta property="og:image" content="http://lujji.github.io/blog/reverse-engineering-stlink-firmware/dmesg.png">
 <meta property="og:image" content="http://lujji.github.io/blog/reverse-engineering-stlink-firmware/histogram.png">
 <meta property="og:image" content="http://lujji.github.io/blog/reverse-engineering-stlink-firmware/blinking_led.jpg">
-<meta property="og:updated_time" content="2017-03-18T21:01:22.887Z">
+<meta property="article:published_time" content="2016-10-12T22:11:48.000Z">
+<meta property="article:modified_time" content="2017-03-18T21:01:22.000Z">
+<meta property="article:author" content="lujji">
+<meta property="article:tag" content="st-link">
+<meta property="article:tag" content="reverse-engineering">
+<meta property="article:tag" content="stm32">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Reverse-engineering ST-Link firmware">
-<meta name="twitter:description" content="This is the first part of ST-Link reverse-engineering, where I cover analyzing and decompiling the updater utility, decrypting and encrypting firmware binaries and running custom code on ST-Link v2/2-">
 <meta name="twitter:image" content="http://lujji.github.io/blog/reverse-engineering-stlink-firmware/dmesg.png">
   
     <link rel="alternate" href="atom.xml" title="lujji" type="application/atom+xml">
@@ -30,10 +32,12 @@
   
     <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
   
-  <link rel="stylesheet" href="/blog/css/style.css">
+  
+<link rel="stylesheet" href="/blog/css/style.css">
+
   
 
-</head>
+<meta name="generator" content="Hexo 6.3.0"></head>
 
 <body>
   <div id="container">
@@ -61,7 +65,7 @@
         
       </nav>
       <nav id="sub-nav">
-      <a id="nav-github-link" class="nav-icon" href="https://github.com/lujji" title="GitHub"></a>
+      <a id="nav-github-link" class="nav-icon" target="_blank" rel="noopener" href="https://github.com/lujji" title="GitHub"></a>
         
           <a id="nav-rss-link" class="nav-icon" href="atom.xml" title="RSS Feed"></a>
         
@@ -73,6 +77,7 @@
     </div>
   </div>
 </header>
+
       <div class="outer">
         <section id="main"><article id="post-reverse-engineering-stlink-firmware" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
@@ -96,19 +101,20 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <p>This is the first part of ST-Link reverse-engineering, where I cover analyzing and decompiling the updater utility, decrypting and encrypting firmware binaries and running custom code on ST-Link v2/2-1 programmer.</p>
-<a id="more"></a>
+        <p>This is the first part of ST-Link reverse-engineering, where I cover analyzing and decompiling the updater utility, decrypting and encrypting firmware binaries and running custom code on ST-Link v2&#x2F;2-1 programmer.</p>
+<span id="more"></span>
 <hr>
 <h2 id="Preface"><a href="#Preface" class="headerlink" title="Preface"></a>Preface</h2><p>ST-Link 2 is a neat programmer. It can program, debug and even supports SWO Trace. The more I use it, the more I seem to forget about this <a href="abomination.jpg">abomination</a>. Recently, I came across a Nucleo board with an ST-Link v2-1, which in addition to all the regular features acts as a virtual COM port (VCP) and supports drag-n-drop upload. Sweet! Although I wasn’t very excited about the drag-n-drop thing, having UART for debugging on the same board comes in real handy. After studying the schematics I realized that the programmer is pretty much identical to a regular ST-Link v2 in terms of hardware. The only big difference is that v2-1 uses an MCU with 128k of flash versus 64k on v2 programmer. That made me think if there are any ways of getting UART on a ‘regular’ ST-Link. And so it began..</p>
-<h2 id="Research"><a href="#Research" class="headerlink" title="Research"></a>Research</h2><p>EEVBlog forum user <code>eliocor</code> was kind enough to help and did a lot of research on the topic. He pointed me towards <a href="https://my.st.com/public/STe2ecommunities/mcu/Lists/cortex_mx_stm32/Flat.aspx?RootFolder=%2Fpublic%2FSTe2ecommunities%2Fmcu%2FLists%2Fcortex_mx_stm32%2FDifference%20between%20ST-LINKV2-1%20and%20ST-LINKV2&amp;FolderCTID=0x01200200770978C69A1141439FE559EB459D7580009C4E14902C3CDE46A77F0FFD06506F5B&amp;currentviews=194" target="_blank" rel="external">this</a> discussion on the ST forums. According to the ST employee, there are 4 versions of ST-Link 2: ST-Link/v2, ST-Link/v2-A, ST-Link/v2-B and ST-Link/v2-1. Presumably, A, B and 2-1 versions all have UART support and a different bootloader. ST-Link/v2-1 also uses a larger MCU. Looking at windows drivers reveals a number of different PID combinations.</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">VID_0483&amp;PID_3748</div><div class="line">VID_0483&amp;PID_374A&amp;MI_00</div><div class="line">VID_0483&amp;PID_374B&amp;MI_00</div><div class="line">VID_0483&amp;PID_374A&amp;MI_01</div></pre></td></tr></table></figure>
+<h2 id="Research"><a href="#Research" class="headerlink" title="Research"></a>Research</h2><p>EEVBlog forum user <code>eliocor</code> was kind enough to help and did a lot of research on the topic. He pointed me towards <a target="_blank" rel="noopener" href="https://my.st.com/public/STe2ecommunities/mcu/Lists/cortex_mx_stm32/Flat.aspx?RootFolder=/public/STe2ecommunities/mcu/Lists/cortex_mx_stm32/Difference%20between%20ST-LINKV2-1%20and%20ST-LINKV2&FolderCTID=0x01200200770978C69A1141439FE559EB459D7580009C4E14902C3CDE46A77F0FFD06506F5B&currentviews=194">this</a> discussion on the ST forums. According to the ST employee, there are 4 versions of ST-Link 2: ST-Link&#x2F;v2, ST-Link&#x2F;v2-A, ST-Link&#x2F;v2-B and ST-Link&#x2F;v2-1. Presumably, A, B and 2-1 versions all have UART support and a different bootloader. ST-Link&#x2F;v2-1 also uses a larger MCU. Looking at windows drivers reveals a number of different PID combinations.</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">VID_0483&amp;PID_3748</span><br><span class="line">VID_0483&amp;PID_374A&amp;MI_00</span><br><span class="line">VID_0483&amp;PID_374B&amp;MI_00</span><br><span class="line">VID_0483&amp;PID_374A&amp;MI_01</span><br></pre></td></tr></table></figure>
 <p>Initially, I tried connecting to the MCU with J-Link and see if we get anything useful. I launched J-Link Commander, typed ‘connect’ and was very surprised.</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">Active read protected STM32 device detected. This could cause problems during flash download.</div><div class="line">Device will be unsecured now.</div><div class="line">Note: Unsecuring will trigger a mass erase of the internal flash.</div></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Active read protected STM32 device detected. This could cause problems during flash download.</span><br><span class="line">Device will be unsecured now.</span><br><span class="line">Note: Unsecuring will trigger a mass erase of the internal flash.</span><br></pre></td></tr></table></figure>
 <p>MCU committed suicide. Flash was completely erased and I lost my ST-Link. Apparently, J-Link linux utility was ‘kind’ enough to remove option bytes without even asking the user.</p>
 <p>Despite the fact that I lost my programmer, I still learned some useful information. Being able to unsecure the chip by erasing the flash contents suggests that Level 1 protection is active (more on that in Part 2).</p>
 <h2 id="Analyzing-the-updater"><a href="#Analyzing-the-updater" class="headerlink" title="Analyzing the updater"></a>Analyzing the updater</h2><p>There is an article by Taylor Killian written in 2013, which covers extracting ST-Link firmware from the updater executable. At first I tried following the author’s approach and disassembling the windows executable. I searched for string references and soon found a part of code that decides which firmware to flash based on the ID of the programmer. It was implemented as a switch statement and the disassembly looked like a simple jump table. I fiddled around with various conditional jumps and was able to ‘help’ the program flash a different firmware into the programmer. After a few attempts I detached st-link from the virtual box and dmesg greeted me with the following:</p>
-<img src="/blog/reverse-engineering-stlink-firmware/dmesg.png" alt="" ""="" title="">
-<p>Hah, piece of cake! I tried opening /dev/ttyACM2 - no errors. Then I connected a dev-board and tried flashing it with my upgraded st-link. It didn’t work. The official flash utility failed with ‘ST-Link USB error’ and openocd refused to see the programmer at all. Moreover, when I unplugged and reattached st-link, CDC interface was gone. For some reason st-link refused to exit DFU mode.</p>
+<img src="/blog/reverse-engineering-stlink-firmware/dmesg.png" alt="""" title="""">
+
+<p>Hah, piece of cake! I tried opening &#x2F;dev&#x2F;ttyACM2 - no errors. Then I connected a dev-board and tried flashing it with my upgraded st-link. It didn’t work. The official flash utility failed with ‘ST-Link USB error’ and openocd refused to see the programmer at all. Moreover, when I unplugged and reattached st-link, CDC interface was gone. For some reason st-link refused to exit DFU mode.</p>
 <p>I played around with windows update utility but quickly got bored. Luckily, ST were kind enough to have a cross-platform updater written in java, so that we no longer have to fire up a virtual machine just to update the firmware.</p>
 <p>Extracting STLinkUpgrade.jar reveals some interesting binaries. I tried to match them with corresponding labels from the updater:</p>
 <ul>
@@ -123,33 +129,40 @@
 <p>The first obvious step was to rename these files inside the .jar archive and make the updater flash the firmware that we want. Unfortunately, the results were the same as with patching the windows executable.</p>
 <p>The next step was to figure out what format these files have. When working with unknown data, it’s always a good idea to have a visual representation of some sort. Judging by the uniform distribution of data we can suspect some encryption or archiving involved.</p>
 <img src="/blog/reverse-engineering-stlink-firmware/histogram.png" alt="Histogram of firmware data" title="Histogram of firmware data">
-<p>Now, it’s no secret that these binaries are encrypted with AES-128 and the key is stored inside the executable in plain ASCII, which was covered in the article I mentioned earlier. However, since I was planning to use the application itself to perform encryption/decryption, this information was of little use to me. So without any further investigation I went on to decompiling the updater utility.</p>
-<p>I used <a href="https://bitbucket.org/mstrobel/procyon/downloads" target="_blank" rel="external">procyon decompiler</a>, reconstructed function calls and after a while was able to decrypt the firmware binary. Encryption key was <del>“worst HAL libraries”</del> “best performance”. Finally, I’ve hacked everything into a command-line utility, which is able to encrypt and decrypt binary images (code is available on <a href="https://github.com/lujji/st-decrypt" target="_blank" rel="external">github</a>).</p>
+
+<p>Now, it’s no secret that these binaries are encrypted with AES-128 and the key is stored inside the executable in plain ASCII, which was covered in the article I mentioned earlier. However, since I was planning to use the application itself to perform encryption&#x2F;decryption, this information was of little use to me. So without any further investigation I went on to decompiling the updater utility.</p>
+<p>I used <a target="_blank" rel="noopener" href="https://bitbucket.org/mstrobel/procyon/downloads">procyon decompiler</a>, reconstructed function calls and after a while was able to decrypt the firmware binary. Encryption key was <del>“worst HAL libraries”</del> “best performance”. Finally, I’ve hacked everything into a command-line utility, which is able to encrypt and decrypt binary images (code is available on <a target="_blank" rel="noopener" href="https://github.com/lujji/st-decrypt">github</a>).</p>
 <p>Let’s take a look at the decrypted file and search for known Unicode strings.</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">0x00008ee0: 80 14 00 20 04 03 09 04 26 03 53 00 54 00 4d 00  ... ....&amp;.S.T.M.</div><div class="line">0x00008ef0: 69 00 63 00 72 00 6f 00 65 00 6c 00 65 00 63 00  i.c.r.o.e.l.e.c.</div><div class="line">0x00008f00: 74 00 72 00 6f 00 6e 00 69 00 63 00 73 00 00 00  t.r.o.n.i.c.s...</div><div class="line">0x00008f10: 1a 03 53 00 54 00 4d 00 33 00 32 00 20 00 53 00  ..S.T.M.3.2. .S.</div><div class="line">0x00008f20: 54 00 4c 00 69 00 6e 00 6b 00 00 00 1c 03 53 00  T.L.i.n.k.....S.</div><div class="line">0x00008f30: 54 00 2d 00 4c 00 69 00 6e 00 6b 00 20 00 44 00  T.-.L.i.n.k. .D.</div><div class="line">0x00008f40: 65 00 62 00 75 00 67 00 2d e9 f8 4f 00 24 fe f7  e.b.u.g.-..O.$..</div><div class="line">0x00008f50: 3d fa 82 46 00 22 4f f4 fa 61 04 20 fb f7 ee fc  =..F.&quot;O..a. ....</div></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">0x00008ee0: 80 14 00 20 04 03 09 04 26 03 53 00 54 00 4d 00  ... ....&amp;.S.T.M.</span><br><span class="line">0x00008ef0: 69 00 63 00 72 00 6f 00 65 00 6c 00 65 00 63 00  i.c.r.o.e.l.e.c.</span><br><span class="line">0x00008f00: 74 00 72 00 6f 00 6e 00 69 00 63 00 73 00 00 00  t.r.o.n.i.c.s...</span><br><span class="line">0x00008f10: 1a 03 53 00 54 00 4d 00 33 00 32 00 20 00 53 00  ..S.T.M.3.2. .S.</span><br><span class="line">0x00008f20: 54 00 4c 00 69 00 6e 00 6b 00 00 00 1c 03 53 00  T.L.i.n.k.....S.</span><br><span class="line">0x00008f30: 54 00 2d 00 4c 00 69 00 6e 00 6b 00 20 00 44 00  T.-.L.i.n.k. .D.</span><br><span class="line">0x00008f40: 65 00 62 00 75 00 67 00 2d e9 f8 4f 00 24 fe f7  e.b.u.g.-..O.$..</span><br><span class="line">0x00008f50: 3d fa 82 46 00 22 4f f4 fa 61 04 20 fb f7 ee fc  =..F.&quot;O..a. ....</span><br></pre></td></tr></table></figure>
+
 <p>Looks promissing, right? ;)</p>
 <p>The next step was to change something in the decrypted firmware, encrypt it and send back to the device. It worked flawlessly. As a sanity check, I tried various combinations, including flashing a firmware consisting entirely of 0xFF bytes, just to make sure that the firmware is indeed accepted and written to the device.</p>
 <p>At this point I was not interested in analyzing the firmware any further. I realized that the bootloader plays an important role, and I won’t be able to proceed without obtaining it.</p>
 <h2 id="Hello-world"><a href="#Hello-world" class="headerlink" title="Hello, world"></a>Hello, world</h2><p>Knowing how to encrypt the firmware, I could flash anything I want. However, I had no idea how the bootloader decides whether or not the firmware is OK before it passes control to it. Therefore, I needed to test if the code would actually get executed on the device.</p>
-<p>I decided to write a ‘Hello world’ program that would blink an LED on PA5 (SWCLK on the SWD connector). The first thing to do was to alter the linker script and offset the ROM section by the size of the bootloader section.<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">MEMORY</div><div class="line">&#123;</div><div class="line">    rom (rx) : ORIGIN = 0x08004000, LENGTH = 64K - 0x4000</div><div class="line">    ram (rwx) : ORIGIN = 0x20000000, LENGTH = 20K</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>I decided to write a ‘Hello world’ program that would blink an LED on PA5 (SWCLK on the SWD connector). The first thing to do was to alter the linker script and offset the ROM section by the size of the bootloader section.</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">MEMORY</span><br><span class="line">&#123;</span><br><span class="line">    rom (rx) : ORIGIN = 0x08004000, LENGTH = 64K - 0x4000</span><br><span class="line">    ram (rwx) : ORIGIN = 0x20000000, LENGTH = 20K</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
 <p>The code is rather self-explanatory.</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</div><div class="line">    rcc_clock_setup_in_hse_8mhz_out_72mhz();</div><div class="line">    rcc_periph_clock_enable(RCC_GPIOA);</div><div class="line">    gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_50_MHZ,</div><div class="line">        GPIO_CNF_OUTPUT_PUSHPULL, GPIO5);</div><div class="line"></div><div class="line">    <span class="keyword">while</span> (<span class="number">1</span>) &#123;</div><div class="line">        gpio_toggle(GPIOA, GPIO5);</div><div class="line">        delay_ms(<span class="number">250</span>);</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    rcc_clock_setup_in_hse_8mhz_out_72mhz();</span><br><span class="line">    rcc_periph_clock_enable(RCC_GPIOA);</span><br><span class="line">    gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_50_MHZ,</span><br><span class="line">        GPIO_CNF_OUTPUT_PUSHPULL, GPIO5);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> (<span class="number">1</span>) &#123;</span><br><span class="line">        gpio_toggle(GPIOA, GPIO5);</span><br><span class="line">        delay_ms(<span class="number">250</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
 <p>After compiling the binary I used my utility to encrypt the binary.</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ java -jar st_decrypt.jar -k <span class="string">"best performance"</span> -i main.bin -o f2_3.bin --encrypt</div></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ java -jar st_decrypt.jar -k <span class="string">&quot;best performance&quot;</span> -i main.bin -o f2_3.bin --encrypt</span><br></pre></td></tr></table></figure>
+
 <p>Next, we replace the original <code>f2_3.bin</code> with our own, compress the jar archive and update the firmware on the st-link. For this test I used my F4 Discovery board. The update process finishes with an error saying that it can’t exit DFU mode. Let’s take a look at the board now.</p>
 <img src="/blog/reverse-engineering-stlink-firmware/blinking_led.jpg" alt="Current limiting? Never heard of." title="Current limiting? Never heard of.">
+
 <p>It was the first time I was excited about a blinking LED on a development board ;) Once you unplug the power, st-link would start in DFU mode again (as it normally does). Each st-link related command like writing to flash or reading target voltage would first ask the st-link to exit DFU mode and start executing main firmware code.</p>
 <p>Now I have a way of executing my own code on the programmer. The next obvious step is to retrieve the bootloader, which I’ll cover in Part 2.</p>
 
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://lujji.github.io/blog/reverse-engineering-stlink-firmware/" data-id="cjax4wkzu000eqas6dx0e6l6r" class="article-share-link">Share</a>
+      <a data-url="http://lujji.github.io/blog/reverse-engineering-stlink-firmware/" data-id="cle467sso000baxcxfyzrgkah" class="article-share-link">Share</a>
       
         <a href="http://lujji.github.io/blog/reverse-engineering-stlink-firmware/#disqus_thread" class="article-comment-link">Comments</a>
       
       
-  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/blog/tags/reverse-engineering/">reverse-engineering</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/blog/tags/st-link/">st-link</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/blog/tags/stm32/">stm32</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/blog/tags/reverse-engineering/" rel="tag">reverse-engineering</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/blog/tags/st-link/" rel="tag">st-link</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/blog/tags/stm32/" rel="tag">stm32</a></li></ul>
 
     </footer>
   </div>
@@ -180,7 +193,7 @@
 
 <section id="comments">
   <div id="disqus_thread">
-    <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    <noscript>Please enable JavaScript to view the <a target="_blank" rel="noopener" href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
   </div>
 </section>
 </section>
@@ -192,19 +205,13 @@
   
     
   <div class="widget-wrap">
-    <h3 class="widget-title">Archives</h3>
-    <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2017/08/">August 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2017/07/">July 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2017/04/">April 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2017/03/">March 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2017/02/">February 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2017/01/">January 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2016/10/">October 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/blog/archives/2016/09/">September 2016</a></li></ul>
-    </div>
-  </div>
-
-
-  
-    
-  <div class="widget-wrap">
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/blog/power-analysis-with-ds1000z/">Power analysis with Rigol DS1000Z</a>
+          </li>
         
           <li>
             <a href="/blog/serial-bootloader-for-stm8/">Serial bootloader for STM8</a>
@@ -226,9 +233,30 @@
             <a href="/blog/bare-metal-programming-stm8/">Bare metal programming: STM8</a>
           </li>
         
+          <li>
+            <a href="/blog/installing-blackmagic-via-stlink-bootloader/">Installing Black Magic via ST-Link bootloader</a>
+          </li>
+        
+          <li>
+            <a href="/blog/esp-httpd/">HTTP server with WebSockets on ESP8266</a>
+          </li>
+        
+          <li>
+            <a href="/blog/reverse-engineering-stlink-firmware-part2/">Reverse-engineering ST-Link firmware - Part 2</a>
+          </li>
+        
+          <li>
+            <a href="/blog/reverse-engineering-stlink-firmware/">Reverse-engineering ST-Link firmware</a>
+          </li>
+        
+          <li>
+            <a href="/blog/stlink-clone-trace/">Adding Trace support to ST-Link clones</a>
+          </li>
+        
       </ul>
     </div>
   </div>
+
 
   
 </aside>
@@ -238,7 +266,7 @@
   
   <div class="outer">
     <div id="footer-info" class="inner">
-      &copy; 2017 lujji<br>      
+      &copy; 2023 lujji<br>      
       lujji at protonmail com
     </div>
   </div>
@@ -270,11 +298,17 @@
 <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
 
 
-  <link rel="stylesheet" href="/blog/fancybox/jquery.fancybox.css">
-  <script src="/blog/fancybox/jquery.fancybox.pack.js"></script>
+  
+<link rel="stylesheet" href="/blog/fancybox/jquery.fancybox.css">
+
+  
+<script src="/blog/fancybox/jquery.fancybox.pack.js"></script>
+
+
 
 
 <script src="/blog/js/script.js"></script>
+
 
   </div>
 </body>
